@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use alloy::primitives::Address;
 use super::{
-    types::{BlockNumber, Log},
+    types::{BlockNumber, Log, TxHash, TxReceipt},
     errors::ScanError,
 };
 
@@ -37,4 +37,15 @@ pub trait EvmClient: Send + Sync {
         owner: Address,
         block: Option<BlockNumber>,
     ) -> Result<[u8; 32], ScanError>;
+
+    async fn get_block_tx_hashes(
+        &self,
+        block: BlockNumber,
+    ) -> Result<Vec<TxHash>, ScanError>;
+
+    async fn get_transaction_receipt(
+        &self,
+        tx: TxHash,
+    ) -> Result<Option<TxReceipt>, ScanError>;
+
 }

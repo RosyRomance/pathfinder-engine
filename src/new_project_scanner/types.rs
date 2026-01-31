@@ -122,3 +122,9 @@ pub struct FilterDecision {
     pub confidence: f64,
     pub signals: FilterSignals,
 }
+
+#[derive(Clone, Debug)]
+pub struct TxReceipt {
+    pub contract_address: Option<Address>,
+    pub block_number: BlockNumber,
+}

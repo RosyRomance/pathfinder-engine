@@ -10,4 +10,7 @@ serde = { version = "1", features = ["derive"] }
 thiserror = "1"
 anyhow = "1"
 alloy = { version = "1.0.41", features = ["full", "dyn-abi", "json-abi", "signer-local", "reqwest-rustls-tls"] }
-
+alloy-provider = "1.5.2"
+alloy-providers = "0.0.0-reserved"
+reqwest = "0.13.1"
+url = "2.5.7"
