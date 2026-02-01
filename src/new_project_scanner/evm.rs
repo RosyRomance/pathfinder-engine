@@ -1,5 +1,8 @@
 use async_trait::async_trait;
-use alloy::primitives::Address;
+use alloy::{
+    primitives::Address,
+    providers::Provider,
+};
 use super::{
     types::{BlockNumber, Log, TxHash, TxReceipt},
     errors::ScanError,
@@ -48,4 +51,5 @@ pub trait EvmClient: Send + Sync {
         tx: TxHash,
     ) -> Result<Option<TxReceipt>, ScanError>;
 
+    fn provider(&self) -> & dyn Provider;
 }

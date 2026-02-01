@@ -98,7 +98,7 @@ impl EvmClient for AlloyEvmClient {
         let mut out = Vec::with_capacity(block.transactions.len());
         for tx_ref in iter_txs(&block.transactions) {
             out.push(match tx_ref {
-                TxRef::Full(tx) => TxHash(**tx.inner.hash()),
+                TxRef::Full(tx) => TxHash(*tx.inner.hash()),
                 TxRef::Hash(h) => h,
             });
         }
@@ -166,6 +166,10 @@ impl EvmClient for AlloyEvmClient {
         let balance: [u8; 32] = [0u8; 32];
         Ok(balance)
     }
+
+    fn provider(&self) -> & dyn Provider {
+        &self.provider
+    }
 }
 
 // ========================== Funcs ==========================
@@ -187,7 +191,7 @@ fn iter_txs<'a>(
                 hashes
                     .iter()
                     .copied()
-                    .map(|h| TxRef::Hash(TxHash(*h)))
+                    .map(|h| TxRef::Hash(TxHash(h)))
             )
         }
         _ => Box::new(std::iter::empty()),

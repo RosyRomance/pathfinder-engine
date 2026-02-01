@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-pub use alloy::primitives::Address;
+pub use alloy::primitives::{Address, B256};
 
 
 pub type ChainId = u64;
@@ -9,7 +9,7 @@ pub type BlockNumber = u64;
 // pub struct Address(pub [u8; 20]);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct TxHash(pub [u8; 32]);
+pub struct TxHash(pub B256);
 
 impl std::fmt::Display for TxHash {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -19,6 +19,12 @@ impl std::fmt::Display for TxHash {
             write!(f, "{:02x}", x)?;
         }
         Ok(())
+    }
+}
+
+impl From<TxHash> for B256 {
+    fn from(h: TxHash) -> Self {
+        h.0
     }
 }
 
@@ -42,6 +48,7 @@ pub struct ContractCandidate {
     pub chain_id: ChainId,
     pub contract: Address,
     pub deployed_block: BlockNumber,
+    pub tx_hashes: Vec<TxHash>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

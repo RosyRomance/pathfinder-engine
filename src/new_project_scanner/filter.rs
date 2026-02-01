@@ -1,7 +1,14 @@
 use async_trait::async_trait;
-use alloy::primitives::{B256, hex, FixedBytes, Address};
+use alloy::{
+    primitives::{FixedBytes, Address, U256, TxKind, Bytes},
+    rpc::types::{
+        TransactionRequest, 
+        TransactionInput,
+        Log,
+    },
+};
 use super::{
-    types::{ContractCandidate, FilterDecision, FilterSignals},
+    types::{ContractCandidate, FilterDecision, FilterSignals, TxHash},
     errors::ScanError,
     evm::EvmClient,
     config::ScannerConfig,
@@ -15,6 +22,11 @@ const TRANSFER_SIG: FixedBytes<32> = FixedBytes([
     0x95, 0x2b, 0xa7, 0xf1, 0x63, 0xc4, 0xa1, 0x16,
     0x28, 0xf5, 0x5a, 0x4d, 0xf5, 0x23, 0xb3, 0xef,
 ]);
+
+const BALANCE_OF_SELECTOR: FixedBytes<4> = FixedBytes([
+    0x70, 0xa0, 0x82, 0x31, // balanceOf(address)
+]);
+
 
 #[async_trait]
 pub trait CandidateFilter: Send + Sync {
@@ -40,13 +52,13 @@ impl<C: EvmClient> CandidateFilter for BehaviorFilter<C> {
         // 2) retains_balance: token balance stays > 0 after N blocks (requires choosing token)
         // 3) has_stake_like_methods: bytecode contains function selectors (rough heuristic)
 
-        let receives_token = self.check_receives_token(cand).await?;
+        let receives_token = self.check_receives_token(cand, &cand.tx_hashes).await?;
         let has_stake_like_methods = self.check_selectors(cand).await?;
 
         // retains_balance is hard without knowing token.
         // v1 strategy: if receives_token == true, pick top token(s) seen in Transfer logs and test balance retention.
         let retains_balance = if receives_token {
-            self.check_retains_balance(cand).await.unwrap_or(false)
+            self.check_retains_balance(cand, &cand.tx_hashes).await.unwrap_or(false)
         } else {
             false
         };
@@ -87,20 +99,21 @@ impl<C: EvmClient> BehaviorFilter<C> {
     async fn check_receives_token(
         &self,
         cand: &ContractCandidate,
+        tx_hashes: &[TxHash],
     ) -> Result<bool, ScanError> {
-        let addr = cand.contract.clone();
+        let target = cand.contract;
 
-        // 你已有的：最近观察到的 tx hashes（非常关键）
-        let tx_hashes = self.recent_txs_for_address(addr).await?;
-
-        for h in tx_hashes {
-            let receipt = match self.client.get_transaction_receipt(h).await? {
-                Some(r) => r,
-                None => continue,
+        for &h in tx_hashes {
+            let receipt = match self.client.provider()
+                .get_transaction_receipt(h.into())
+                .await
+            {
+                Ok(Some(r)) => r,
+                _ => continue,
             };
 
-            for log in receipt.logs {
-                if is_erc20_receive(&log, addr, TRANSFER_SIG) {
+            for log in receipt.logs() {
+                if is_erc20_receive(&log, target) {
                     return Ok(true);
                 }
             }
@@ -111,14 +124,39 @@ impl<C: EvmClient> BehaviorFilter<C> {
 
     async fn check_retains_balance(
         &self,
-        _cand: &ContractCandidate,
+        cand: &ContractCandidate,
+        tx_hashes: &[TxHash],
     ) -> Result<bool, ScanError> {
-        // PSEUDOCODE:
-        // identify candidate tokens from transfer logs where to==contract
-        // for token in top_tokens:
-        //   bal0 = balanceOf(token, contract, block=deployed_block+1)
-        //   bal1 = balanceOf(token, contract, block=deployed_block+retain_balance_min_blocks)
-        //   if bal0 > 0 and bal1 > 0: return true
+        let target = cand.contract;
+        let mut seen_tokens = Vec::<Address>::new();
+
+        // 1) 从 receipts 中找“接收过的 token”
+        for &h in tx_hashes {
+            let receipt = match self.client.provider()
+                .get_transaction_receipt(h.into())
+                .await
+            {
+                Ok(Some(r)) => r,
+                _ => continue,
+            };
+
+            for log in receipt.logs() {
+                if is_erc20_receive(&log, target) {
+                    let token = log.inner.address;
+                    if !seen_tokens.contains(&token) {
+                        seen_tokens.push(token);
+                    }
+                }
+            }
+        }
+
+        // 2) 对这些 token 调 balanceOf
+        for token in seen_tokens {
+            if self.balance_of(token, target).await? > U256::ZERO {
+                return Ok(true);
+            }
+        }
+
         Ok(false)
     }
 
@@ -144,7 +182,38 @@ impl<C: EvmClient> BehaviorFilter<C> {
         }
         Ok(false)
     }
+
+    async fn balance_of(
+        &self,
+        token: Address,
+        owner: Address,
+    ) -> Result<U256, ScanError> {
+        let mut data = [0u8; 36];
+        data[..4].copy_from_slice(&BALANCE_OF_SELECTOR.0);
+        data[4 + 12..].copy_from_slice(owner.as_slice());
+
+        let tx = TransactionRequest {
+            to: Some(TxKind::Call(token)),
+            input: TransactionInput {
+                input: Some(Bytes::copy_from_slice(&data)),
+                data: None,
+            },
+            ..Default::default()
+        };
+        let raw = self.client
+            .provider()
+            .call(tx)
+            .await
+            .map_err(|e| ScanError::Provider(e.to_string()))?;
+
+        if raw.len() < 32 {
+            return Ok(U256::ZERO);
+        }
+
+        Ok(U256::from_be_slice(&raw[raw.len() - 32..]))
+    }
 }
+
 
 fn hex4(s: &str) -> Result<[u8; 4], ScanError> {
     // Expect "0x" optional, then 8 hex chars
@@ -161,13 +230,13 @@ fn hex4(s: &str) -> Result<[u8; 4], ScanError> {
 }
 
 fn is_erc20_receive(log: &Log, target: Address) -> bool {
-    if log.topics.len() < 3 {
+    if log.topics().len() < 3 {
         return false;
     }
-    if log.topics[0] != TRANSFER_SIG {
+    if log.topics()[0] != TRANSFER_SIG {
         return false;
     }
 
-    let to = Address::from_slice(&log.topics[2].as_slice()[12..]);
+    let to = Address::from_slice(&log.topics()[2].as_slice()[12..]);
     to == target
 }
