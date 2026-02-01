@@ -8,8 +8,19 @@ pub type BlockNumber = u64;
 // #[derive(Clone, Debug)]
 // pub struct Address(pub [u8; 20]);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct TxHash(pub [u8; 32]);
+
+impl std::fmt::Display for TxHash {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let b = self.0 ; // 按你实际定义调整
+        write!(f, "0x")?;
+        for x in b {
+            write!(f, "{:02x}", x)?;
+        }
+        Ok(())
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct Log {

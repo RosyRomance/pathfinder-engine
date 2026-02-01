@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use std::sync::Arc;
-use url::Url;
+use std::collections::HashSet;
+use url::{Url, ParseError};
 use alloy::{
     providers::{
     Provider,
@@ -16,8 +17,8 @@ use alloy::{
         ChainIdFiller,
         },
     },
-    primitives::{Address, U256, B256, U64},
-    rpc::types::{BlockId, BlockNumberOrTag, TransactionReceipt},
+    primitives::{Address, B256 },
+    rpc::types::{BlockId, BlockNumberOrTag, TransactionReceipt, Transaction, BlockTransactions },
     network::Ethereum,
 };
 use super::{
@@ -25,6 +26,7 @@ use super::{
     errors::ScanError,
     types::{BlockNumber, TxHash, TxReceipt, Log},
 };
+
 
 // ========================== pub types ==========================
 
@@ -50,13 +52,14 @@ pub type SharedProvider = Arc<DefaultProvider>;
 
 // ========================== Codes ==========================
 
+#[derive(Clone, Debug)]
 pub struct AlloyEvmClient {
     provider: DefaultProvider,
 }
 
 impl AlloyEvmClient {
-    pub fn new_arbitrum(rpc_url: &str) -> Result<Self, ScanError> {
-        let url: Url = rpc_url.parse().map_err(|e| ScanError::Config(e.to_string()))?;
+    pub fn new_client(rpc_url: &str) -> Result<Self, ScanError> {
+        let url: Url = rpc_url.parse().map_err(|e: ParseError| ScanError::Config(e.to_string()))?;
 
         let provider = ProviderBuilder::new()
             .connect_http(url);
@@ -93,9 +96,14 @@ impl EvmClient for AlloyEvmClient {
         };
 
         let mut out = Vec::with_capacity(block.transactions.len());
-        for tx in block.transactions {
-            out.push(TxHash(tx.into()));
+        for tx_ref in iter_txs(&block.transactions) {
+            out.push(match tx_ref {
+                TxRef::Full(tx) => TxHash(**tx.inner.hash()),
+                TxRef::Hash(h) => h,
+            });
         }
+        let uniq: HashSet<_> = out.iter().clone().collect();
+        // println!("tx hashes: total={}, unique={}", out.len(), uniq.len());
 
         Ok(out)
     }
@@ -115,7 +123,7 @@ impl EvmClient for AlloyEvmClient {
 
         Ok(Some(TxReceipt {
             contract_address: r.contract_address.map(|a| Address(a.0)),
-            block_number: r.block_number.unwrap_or_default().to::<u64>(),
+            block_number: r.block_number.unwrap_or_default(),
         }))
     }
 
@@ -157,5 +165,31 @@ impl EvmClient for AlloyEvmClient {
     ) -> Result<[u8; 32], ScanError>{
         let balance: [u8; 32] = [0u8; 32];
         Ok(balance)
+    }
+}
+
+// ========================== Funcs ==========================
+
+pub enum TxRef<'a> {
+    Full(&'a Transaction),
+    Hash(TxHash),
+}
+
+fn iter_txs<'a>(
+    txs: &'a BlockTransactions<Transaction>,
+) -> Box<dyn Iterator<Item = TxRef<'a>> + 'a> {
+    match txs {
+        BlockTransactions::Full(v) => {
+            Box::new(v.iter().map(TxRef::Full))
+        }
+        BlockTransactions::Hashes(hashes) => {
+            Box::new(
+                hashes
+                    .iter()
+                    .copied()
+                    .map(|h| TxRef::Hash(TxHash(*h)))
+            )
+        }
+        _ => Box::new(std::iter::empty()),
     }
 }

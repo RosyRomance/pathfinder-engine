@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use alloy::primitives::{B256, hex, FixedBytes, Address};
 use super::{
     types::{ContractCandidate, FilterDecision, FilterSignals},
     errors::ScanError,
@@ -6,6 +7,14 @@ use super::{
     config::ScannerConfig,
 };
 
+
+// ERC20 Transfer(address,address,uint256)
+const TRANSFER_SIG: FixedBytes<32> = FixedBytes([
+    0xdd, 0xf2, 0x52, 0xad, 0x1b, 0xe2, 0xc8, 0x9b,
+    0x69, 0xc2, 0xb0, 0x68, 0xfc, 0x37, 0x8d, 0xaa,
+    0x95, 0x2b, 0xa7, 0xf1, 0x63, 0xc4, 0xa1, 0x16,
+    0x28, 0xf5, 0x5a, 0x4d, 0xf5, 0x23, 0xb3, 0xef,
+]);
 
 #[async_trait]
 pub trait CandidateFilter: Send + Sync {
@@ -77,12 +86,26 @@ impl<C: EvmClient> CandidateFilter for BehaviorFilter<C> {
 impl<C: EvmClient> BehaviorFilter<C> {
     async fn check_receives_token(
         &self,
-        _cand: &ContractCandidate,
+        cand: &ContractCandidate,
     ) -> Result<bool, ScanError> {
-        // PSEUDOCODE:
-        // topic0 = keccak256("Transfer(address,address,uint256)")
-        // logs = get_logs(from, to, address=None, topics0=topic0)
-        // check if any log has `to` == cand.contract in indexed topic1/topic2
+        let addr = cand.contract.clone();
+
+        // 你已有的：最近观察到的 tx hashes（非常关键）
+        let tx_hashes = self.recent_txs_for_address(addr).await?;
+
+        for h in tx_hashes {
+            let receipt = match self.client.get_transaction_receipt(h).await? {
+                Some(r) => r,
+                None => continue,
+            };
+
+            for log in receipt.logs {
+                if is_erc20_receive(&log, addr, TRANSFER_SIG) {
+                    return Ok(true);
+                }
+            }
+        }
+
         Ok(false)
     }
 
@@ -135,4 +158,16 @@ fn hex4(s: &str) -> Result<[u8; 4], ScanError> {
             .map_err(|_| ScanError::Config("bad hex".to_string()))?;
     }
     Ok(out)
+}
+
+fn is_erc20_receive(log: &Log, target: Address) -> bool {
+    if log.topics.len() < 3 {
+        return false;
+    }
+    if log.topics[0] != TRANSFER_SIG {
+        return false;
+    }
+
+    let to = Address::from_slice(&log.topics[2].as_slice()[12..]);
+    to == target
 }

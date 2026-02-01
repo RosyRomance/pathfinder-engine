@@ -39,6 +39,7 @@ impl<C: EvmClient> ContractDiscovery for SimpleDiscovery<C> {
         for block in range.from..=range.to {
             // 1) fetch all tx hashes in this block
             let txs = self.client.get_block_tx_hashes(block).await?;
+            // println!("Discovered {} txs in block {}", txs.len(), block);
 
             for tx in txs {
                 // 2) fetch receipt
@@ -46,6 +47,7 @@ impl<C: EvmClient> ContractDiscovery for SimpleDiscovery<C> {
                     Some(r) => r,
                     None => continue,
                 };
+                // println!("Receipt for tx {}: {:?}", tx, receipt);
 
                 // 3) contract creation tx?
                 let Some(addr) = receipt.contract_address else {

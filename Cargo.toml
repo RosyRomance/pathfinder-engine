@@ -14,3 +14,9 @@ alloy-provider = "1.5.2"
 alloy-providers = "0.0.0-reserved"
 reqwest = "0.13.1"
 url = "2.5.7"
+chrono = "0.4.43"
+
+
+[[bin]]
+name = "test_scanners1"
+path = "src/bin/test_scanners1.rs"
