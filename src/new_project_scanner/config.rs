@@ -4,6 +4,7 @@ use super::{
     errors::ScanError,
 };
 
+// ========================== Codes ==========================
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ScannerConfig {

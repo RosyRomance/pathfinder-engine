@@ -1,5 +1,6 @@
 use thiserror::Error;
 
+// ========================== Codes ==========================
 
 #[derive(Debug, Error)]
 pub enum ScanError {

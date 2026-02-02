@@ -53,3 +53,4 @@ pub trait EvmClient: Send + Sync {
 
     fn provider(&self) -> & dyn Provider;
 }
+

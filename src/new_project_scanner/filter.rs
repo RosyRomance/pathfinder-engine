@@ -14,9 +14,10 @@ use super::{
     config::ScannerConfig,
 };
 
+// ========================== Codes ==========================
 
 // ERC20 Transfer(address,address,uint256)
-const TRANSFER_SIG: FixedBytes<32> = FixedBytes([
+pub const TRANSFER_SIG: FixedBytes<32> = FixedBytes([
     0xdd, 0xf2, 0x52, 0xad, 0x1b, 0xe2, 0xc8, 0x9b,
     0x69, 0xc2, 0xb0, 0x68, 0xfc, 0x37, 0x8d, 0xaa,
     0x95, 0x2b, 0xa7, 0xf1, 0x63, 0xc4, 0xa1, 0x16,
@@ -27,12 +28,14 @@ const BALANCE_OF_SELECTOR: FixedBytes<4> = FixedBytes([
     0x70, 0xa0, 0x82, 0x31, // balanceOf(address)
 ]);
 
+// ========================== Codes ==========================
 
 #[async_trait]
 pub trait CandidateFilter: Send + Sync {
     async fn decide(
         &self,
         cand: &ContractCandidate,
+        tx_hashes: &[TxHash],
     ) -> Result<FilterDecision, ScanError>;
 }
 
@@ -46,19 +49,25 @@ impl<C: EvmClient> CandidateFilter for BehaviorFilter<C> {
     async fn decide(
         &self,
         cand: &ContractCandidate,
+        tx_hashes: &[TxHash],
     ) -> Result<FilterDecision, ScanError> {
         // Signals:
         // 1) receives_token: contract appears as `to` in ERC20 Transfer logs within a small range
         // 2) retains_balance: token balance stays > 0 after N blocks (requires choosing token)
         // 3) has_stake_like_methods: bytecode contains function selectors (rough heuristic)
 
-        let receives_token = self.check_receives_token(cand, &cand.tx_hashes).await?;
-        let has_stake_like_methods = self.check_selectors(cand).await?;
+        let receives_token =
+            self.check_receives_token(cand, tx_hashes).await?;
+
+        let has_stake_like_methods =
+            self.check_selectors(cand).await?;
 
         // retains_balance is hard without knowing token.
         // v1 strategy: if receives_token == true, pick top token(s) seen in Transfer logs and test balance retention.
         let retains_balance = if receives_token {
-            self.check_retains_balance(cand, &cand.tx_hashes).await.unwrap_or(false)
+            self.check_retains_balance(cand, tx_hashes)
+                .await
+                .unwrap_or(false)
         } else {
             false
         };

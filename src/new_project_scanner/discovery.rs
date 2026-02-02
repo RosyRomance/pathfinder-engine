@@ -1,18 +1,19 @@
-
 use async_trait::async_trait;
 use super::{
-    types::{ChainId, BlockRange, ContractCandidate},
+    types::{ChainId, ContractCandidate, DecideOutput},
     errors::ScanError,
     evm::EvmClient,
+    filter::TRANSFER_SIG,
 };
 
+// ========================== Codes ==========================
 
 #[async_trait]
 pub trait ContractDiscovery: Send + Sync {
     async fn discover(
         &self,
-        range: BlockRange,
-    ) -> Result<Vec<ContractCandidate>, ScanError>;
+        range: u64,
+    ) -> Result<DecideOutput, ScanError>;
 }
 
 pub struct SimpleDiscovery<C: EvmClient> {
@@ -24,44 +25,68 @@ pub struct SimpleDiscovery<C: EvmClient> {
 impl<C: EvmClient> ContractDiscovery for SimpleDiscovery<C> {
     async fn discover(
         &self,
-        range: BlockRange,
-    ) -> Result<Vec<ContractCandidate>, ScanError> {
-        let mut out = Vec::new();
+        block: u64,
+    ) -> Result<DecideOutput, ScanError> {
 
-        // Safety limit: avoid scanning insane ranges by mistake
-        let max_blocks = 20_000u64;
-        if range.to - range.from > max_blocks {
-            return Err(ScanError::Config(
-                "block range too large for SimpleDiscovery".to_string(),
-            ));
+        let mut new_candidates = Vec::new();
+        let mut tx_hashes = Vec::new();
+
+        // 1) fetch tx hashes in this block
+        let txs = self.client.get_block_tx_hashes(block).await?;
+        if txs.is_empty() {
+            return Ok(DecideOutput {
+                new_candidates,
+                tx_hashes,
+            });
         }
 
-        for block in range.from..=range.to {
-            // 1) fetch all tx hashes in this block
-            let txs = self.client.get_block_tx_hashes(block).await?;
-            // println!("Discovered {} txs in block {}", txs.len(), block);
+        // 2) inspect receipts
+        for tx in txs {
+            let receipt = match self.client.get_transaction_receipt(tx).await? {
+                Some(r) => r,
+                None => continue,
+            };
 
-            for tx in txs {
-                // 2) fetch receipt
-                let receipt = match self.client.get_transaction_receipt(tx).await? {
-                    Some(r) => r,
-                    None => continue,
-                };
-                // println!("Receipt for tx {}: {:?}", tx, receipt);
+            let mut interesting = false;
 
-                // 3) contract creation tx?
-                let Some(addr) = receipt.contract_address else {
-                    continue;
-                };
-
-                out.push(ContractCandidate {
+            // (A) contract creation → new candidate
+            if let Some(addr) = receipt.contract_address {
+                new_candidates.push(ContractCandidate {
                     chain_id: self.chain_id,
                     contract: addr,
                     deployed_block: receipt.block_number,
+                    verify_attempts: 0,
+                    receives_token: None,
+                    has_balance: None,
                 });
+
+                interesting = true;
+            }
+
+            // (B) logs hint token movement (用于后续验证)
+            let logs = self.client.get_logs(
+                receipt.block_number.into(),
+                receipt.block_number.into(),
+                None,
+                Some(TRANSFER_SIG.0),
+            ).await?;
+            for log in &logs {
+                // 极简过滤：有 topic + 非空 data
+                // 不在 decide 阶段做 ERC20 精确解析
+                if !log.topics.is_empty() && !log.data.is_empty() {
+                    interesting = true;
+                    break;
+                }
+            }
+
+            if interesting {
+                tx_hashes.push(tx);
             }
         }
 
-        Ok(out)
+        Ok(DecideOutput {
+            new_candidates,
+            tx_hashes,
+        })
     }
 }

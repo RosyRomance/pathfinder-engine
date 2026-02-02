@@ -17,6 +17,10 @@ url = "2.5.7"
 chrono = "0.4.43"
 
 
+# [[bin]]
+# name = "test_scanners1"
+# path = "src/bin/test_scanners1.rs"
+
 [[bin]]
-name = "test_scanners1"
-path = "src/bin/test_scanners1.rs"
+name = "test_new"
+path = "src/bin/test_new.rs"

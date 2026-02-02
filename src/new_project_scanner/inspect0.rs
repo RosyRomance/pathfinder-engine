@@ -1,10 +1,8 @@
 use async_trait::async_trait;
 use alloy::primitives::Address;
 use super::{
-    types::{ChainId, ContractCandidate, ProjectSnapshot, 
-        FilterDecision, ProjectType, LockupType, 
-        AprSource, AdminKeyType
-    },
+    types::{ChainId, ContractCandidate, ProjectSnapshot, FilterDecision, 
+        ProjectType, LockupType, AprSource, AdminKeyType},
     errors::ScanError,
     evm::EvmClient,
     config::ScannerConfig,

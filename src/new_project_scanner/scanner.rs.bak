@@ -18,6 +18,12 @@ pub struct Scanner<D, F, I, S> {
     pub store: S,
 }
 
+// discovery 现在返回 DecideOutput
+pub struct DecideOutput {
+    pub new_candidates: Vec<ContractCandidate>,
+    pub tx_hashes: Vec<TxHash>,
+}
+
 trait ContractDiscovery {
     async fn decide(&self, range: BlockRange) -> Result<DecideOutput, ScanError>;
 }
@@ -51,19 +57,22 @@ where
         let mut pending = self.store.load_pending(chain_id).await?;
         println!("Loaded {} pending candidates", pending.len());
 
-        // === 2. Safety limit: avoid scanning insane ranges by mistake ===
-        let max_blocks = 20_000u64;
+        // Safety limit: avoid scanning insane ranges by mistake
+        let max_blocks = 200u64;
         if range.to - range.from > max_blocks {
             return Err(ScanError::Config(
                 "block range too large for SimpleDiscovery".to_string(),
             ));
         }
-
         for block in range.from..=range.to {
-            // === 1. decide：处理当前区块，产出新 candidate + tx_hashes ===
-            let decide = self.discovery.discover(block).await?;
+            // === 2. decide：处理当前区块，产出新 candidate + tx_hashes ===
+            let decide = self.discovery.decide(block).await?;
             let tx_hashes = decide.tx_hashes;
             let mut new_candidates = decide.new_candidates;
+
+            if new_candidates.len() > self.cfg.max_candidates_per_run {
+                new_candidates.truncate(self.cfg.max_candidates_per_run);
+            }
 
             println!(
                 "Decide produced {} new candidates, {} tx hashes",
@@ -71,7 +80,7 @@ where
                 tx_hashes.len()
             );
 
-            // === 2. 验证旧 pending candidates（只吃本轮 tx_hashes） ===
+            // === 3. 验证旧 pending candidates（只吃本轮 tx_hashes） ===
             let mut still_pending = Vec::new();
 
             for mut cand in pending {
@@ -79,24 +88,7 @@ where
 	                continue;
 	            }
 	            println!("store检查通过");
-
-	            let decision = self.filter.decide(&cand, tx_hashes).await?;
-	            if !decision.pass || decision.confidence < self.cfg.min_confidence {
-	                cand.verify_attempts += 1;
-                    still_pending.push(cand);
-                    continue
-	            }
-	            println!("filter检查通过");
-	
-	            let snap = self
-	                .inspector
-	                .inspect(&cand, &decision, snapshot_date, now_unix)
-	                .await?;
-	            println!("inspector检查通过: {:?}", snap);
-	
-	            self.store.upsert_snapshot(&snap).await?;
-	            inserted += 1;	            
-
+	            
                 let verified = self
                     .inspector
                     .verify(&mut cand, &tx_hashes)
@@ -155,8 +147,6 @@ where
             self.store.save_pending(chain_id, &still_pending).await?;
             println!("Pending candidates after round: {}", still_pending.len());
 
+            Ok(inserted)
         }
-
-        Ok(inserted)
-    }
 }

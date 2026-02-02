@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-pub use alloy::primitives::{Address, B256};
+pub use alloy::primitives::{Address, B256, FixedBytes};
 
 
 pub type ChainId = u64;
@@ -28,6 +28,12 @@ impl From<TxHash> for B256 {
     }
 }
 
+impl TxHash {
+    pub fn from_fixed(v: FixedBytes<32>) -> Self {
+        TxHash(B256::from(v.0))
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Log {
     pub address: Address,
@@ -48,7 +54,10 @@ pub struct ContractCandidate {
     pub chain_id: ChainId,
     pub contract: Address,
     pub deployed_block: BlockNumber,
-    pub tx_hashes: Vec<TxHash>,
+
+    pub verify_attempts: u32,
+    pub receives_token: Option<bool>,
+    pub has_balance: Option<bool>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -146,3 +155,10 @@ pub struct TxReceipt {
     pub contract_address: Option<Address>,
     pub block_number: BlockNumber,
 }
+
+// discovery 现在返回 DecideOutput
+pub struct DecideOutput {
+    pub new_candidates: Vec<ContractCandidate>,
+    pub tx_hashes: Vec<TxHash>,
+}
+
