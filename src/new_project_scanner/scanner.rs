@@ -18,17 +18,6 @@ pub struct Scanner<D, F, I, S> {
     pub store: S,
 }
 
-trait ContractDiscovery {
-    async fn decide(&self, range: BlockRange) -> Result<DecideOutput, ScanError>;
-}
-
-// store 需要能读 / 写 pending
-trait ProjectStore {
-    async fn load_pending(&self, chain_id: u64) -> Result<Vec<ContractCandidate>, ScanError>;
-    async fn save_pending(&self, chain_id: u64, cands: &[ContractCandidate]) -> Result<(), ScanError>;
-    async fn save_verified(&self, snap: &ProjectSnapshot) -> Result<(), ScanError>;
-}
-
 impl<D, F, I, S> Scanner<D, F, I, S>
 where
     D: ContractDiscovery,
@@ -65,6 +54,11 @@ where
             let tx_hashes = decide.tx_hashes;
             let mut new_candidates = decide.new_candidates;
 
+            // manage backpressure on new candidates
+            // if new_candidates.len() > self.cfg.max_candidates_per_run {
+            //     new_candidates.truncate(self.cfg.max_candidates_per_run);
+            // }
+            
             println!(
                 "Decide produced {} new candidates, {} tx hashes",
                 new_candidates.len(),
@@ -74,40 +68,19 @@ where
             // === 2. 验证旧 pending candidates（只吃本轮 tx_hashes） ===
             let mut still_pending = Vec::new();
 
-            for mut cand in pending {
+            while let Some(cand) = pending.pop() {
 	            if self.store.has_seen_contract(self.cfg.chain_id, &cand.contract).await? {
 	                continue;
 	            }
 	            println!("store检查通过");
 
-	            let decision = self.filter.decide(&cand, tx_hashes).await?;
-	            if !decision.pass || decision.confidence < self.cfg.min_confidence {
-	                cand.verify_attempts += 1;
-                    still_pending.push(cand);
-                    continue
-	            }
-	            println!("filter检查通过");
-	
-	            let snap = self
-	                .inspector
-	                .inspect(&cand, &decision, snapshot_date, now_unix)
-	                .await?;
-	            println!("inspector检查通过: {:?}", snap);
-	
-	            self.store.upsert_snapshot(&snap).await?;
-	            inserted += 1;	            
-
-                let verified = self
-                    .inspector
-                    .verify(&mut cand, &tx_hashes)
-                    .await?;
-
-                cand.verify_attempts += 1;
+	            let decision = self.filter.decide(&cand, &tx_hashes).await?;
+	            let verified = !decision.pass || decision.confidence < self.cfg.min_confidence;
 
                 if verified {
                     let snap = self
                         .inspector
-                        .finalize(&cand, snapshot_date, now_unix)
+                        .inspect(&cand, &decision, snapshot_date, now_unix)
                         .await?;
                     self.store.save_verified(&snap).await?;
                     inserted += 1;
@@ -122,39 +95,16 @@ where
                         cand.contract, cand.verify_attempts
                     );
                 }
+	            println!("filter检查通过");
             }
 
-            // === 4. 处理新 candidate（filter + 首轮验证：可用滑动窗口） ===
-            for mut cand in new_candidates {
-                let decision = self.filter.decide(&cand).await?;
-                if !decision.pass || decision.confidence < self.cfg.min_confidence {
-                    continue;
-                }
-
-                // 首轮验证：可以使用 inspector 内部的 tx window
-                let verified = self
-                    .inspector
-                    .verify_first_round(&mut cand, &tx_hashes)
-                    .await?;
-
-                cand.verify_attempts = 1;
-
-                if verified {
-                    let snap = self
-                        .inspector
-                        .finalize(&cand, snapshot_date, now_unix)
-                        .await?;
-                    self.store.save_verified(&snap).await?;
-                    inserted += 1;
-                } else {
-                    still_pending.push(cand);
-                }
+            let mut pending = still_pending;
+            for cand in new_candidates.into_iter() {
+                pending.push(cand);
             }
-
-            // === 5. 合并并写回 pending ===
-            self.store.save_pending(chain_id, &still_pending).await?;
-            println!("Pending candidates after round: {}", still_pending.len());
-
+            
+            self.store.save_pending(chain_id, &pending).await?;
+            println!("Pending candidates for next round: {}", pending.len());
         }
 
         Ok(inserted)

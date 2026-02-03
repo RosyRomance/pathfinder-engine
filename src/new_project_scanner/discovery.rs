@@ -27,7 +27,7 @@ impl<C: EvmClient> ContractDiscovery for SimpleDiscovery<C> {
         &self,
         block: u64,
     ) -> Result<DecideOutput, ScanError> {
-
+        println!("Discovering contracts in block {}", block);
         let mut new_candidates = Vec::new();
         let mut tx_hashes = Vec::new();
 
@@ -39,6 +39,7 @@ impl<C: EvmClient> ContractDiscovery for SimpleDiscovery<C> {
                 tx_hashes,
             });
         }
+        println!("  Found {} txs", txs.len());
 
         // 2) inspect receipts
         for tx in txs {
@@ -62,6 +63,7 @@ impl<C: EvmClient> ContractDiscovery for SimpleDiscovery<C> {
 
                 interesting = true;
             }
+            println!("ContractCandidate check finished!");
 
             // (B) logs hint token movement (用于后续验证)
             let logs = self.client.get_logs(
@@ -78,6 +80,7 @@ impl<C: EvmClient> ContractDiscovery for SimpleDiscovery<C> {
                     break;
                 }
             }
+            println!("Qualified TxHashes check finished!");
 
             if interesting {
                 tx_hashes.push(tx);

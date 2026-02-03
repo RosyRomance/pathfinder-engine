@@ -23,7 +23,7 @@ async fn main() -> Result<()> {
     let logs = provider.get_logs(&filter).await?;
  
     for log in logs {
-        let inner = log.inner;
+        let inner = log.inner.clone();
         println!("{log:?}");
     }
  
