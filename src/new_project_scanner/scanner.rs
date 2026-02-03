@@ -52,7 +52,7 @@ where
             // === 1. decide：处理当前区块，产出新 candidate + tx_hashes ===
             let decide = self.discovery.discover(block).await?;
             let tx_hashes = decide.tx_hashes;
-            let mut new_candidates = decide.new_candidates;
+            let new_candidates = decide.new_candidates;
 
             // manage backpressure on new candidates
             // if new_candidates.len() > self.cfg.max_candidates_per_run {
@@ -69,7 +69,9 @@ where
             let mut still_pending = Vec::new();
 
             while let Some(cand) = pending.pop() {
+                println!("get into while loop");
 	            if self.store.has_seen_contract(self.cfg.chain_id, &cand.contract).await? {
+                    println!("  Skip already seen contract {:?}", cand.contract);
 	                continue;
 	            }
 	            println!("store检查通过");
@@ -98,13 +100,14 @@ where
 	            println!("filter检查通过");
             }
 
-            let mut pending = still_pending;
+            pending = still_pending;
             for cand in new_candidates.into_iter() {
                 pending.push(cand);
             }
-            
+
             self.store.save_pending(chain_id, &pending).await?;
             println!("Pending candidates for next round: {}", pending.len());
+            println!("Store: \n{:?}\n{:?}\n{:?}", self.store.seen().await, self.store.pending_map().await, self.store.verified_list().await);
         }
 
         Ok(inserted)

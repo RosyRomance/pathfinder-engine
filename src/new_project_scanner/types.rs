@@ -154,6 +154,7 @@ pub struct FilterDecision {
 pub struct TxReceipt {
     pub contract_address: Option<Address>,
     pub block_number: BlockNumber,
+    pub logs: Vec<Log>,
 }
 
 // discovery 现在返回 DecideOutput

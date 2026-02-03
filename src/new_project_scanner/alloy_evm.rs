@@ -128,6 +128,7 @@ impl EvmClient for AlloyEvmClient {
         Ok(Some(TxReceipt {
             contract_address: r.contract_address.map(|a| Address(a.0)),
             block_number: r.block_number.unwrap_or_default(),
+            logs: r.logs().into_iter().map(convert_log).collect(),
         }))
     }
 
@@ -158,7 +159,7 @@ impl EvmClient for AlloyEvmClient {
             .map_err(|e| ScanError::Provider(e.to_string()))?;
 
         let logs = raw_logs
-            .into_iter()
+            .iter()
             .map(convert_log)
             .collect();
 
@@ -253,7 +254,7 @@ fn iter_txs<'a>(
     }
 }
 
-fn convert_log(raw: AlloyLog<LogData>) -> Log {
+fn convert_log(raw: &AlloyLog<LogData>) -> Log {
     Log {
         address: raw.inner.address,
         topics: raw

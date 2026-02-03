@@ -63,7 +63,7 @@ async fn main() -> Result<()> {
     // let latest_block = 19584321u64;  // Lido
     let block_range = BlockRange {
         from: latest_block,
-        to: latest_block + 3,
+        to: latest_block + 1,
     };  
     let snapshot_date = "2024-06-01";
     let now_unix = chrono::Utc::now().timestamp() as u64;
