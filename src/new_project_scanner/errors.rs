@@ -15,4 +15,7 @@ pub enum ScanError {
 
     #[error("internal error: {0}")]
     Internal(String),
+
+    #[error("runtime error: {0}")]
+    Runtime(String),
 }

@@ -54,11 +54,6 @@ where
             let tx_hashes = decide.tx_hashes;
             let new_candidates = decide.new_candidates;
 
-            // manage backpressure on new candidates
-            // if new_candidates.len() > self.cfg.max_candidates_per_run {
-            //     new_candidates.truncate(self.cfg.max_candidates_per_run);
-            // }
-            
             println!(
                 "Decide produced {} new candidates, {} tx hashes",
                 new_candidates.len(),
@@ -68,16 +63,27 @@ where
             // === 2. 验证旧 pending candidates（只吃本轮 tx_hashes） ===
             let mut still_pending = Vec::new();
 
-            while let Some(cand) = pending.pop() {
-                println!("get into while loop");
+            while let Some(mut cand) = pending.pop() {
 	            if self.store.has_seen_contract(self.cfg.chain_id, &cand.contract).await? {
                     println!("  Skip already seen contract {:?}", cand.contract);
 	                continue;
 	            }
-	            println!("store检查通过");
 
 	            let decision = self.filter.decide(&cand, &tx_hashes).await?;
-	            let verified = !decision.pass || decision.confidence < self.cfg.min_confidence;
+	            let verified_once = decision.pass && decision.confidence >= self.cfg.min_confidence;
+                let mut verified = false;
+
+                cand.verify_attempts += 1;
+                if cand.first_receive_block.is_none() {
+                    if verified_once {
+                        cand.first_receive_block = Some(block);
+                    }
+                } else {
+                    if verified_once && block - cand.first_receive_block.unwrap() >= self.cfg.retain_balance_min_blocks {
+                        println!("  Candidate {:?} succeed retaining balance check after {} blocks", cand.contract, self.cfg.retain_balance_min_blocks);
+                        verified = true;
+                    }
+                }
 
                 if verified {
                     let snap = self
@@ -97,13 +103,10 @@ where
                         cand.contract, cand.verify_attempts
                     );
                 }
-	            println!("filter检查通过");
             }
 
             pending = still_pending;
-            for cand in new_candidates.into_iter() {
-                pending.push(cand);
-            }
+            pending.extend(new_candidates);
 
             self.store.save_pending(chain_id, &pending).await?;
             println!("Pending candidates for next round: {}", pending.len());

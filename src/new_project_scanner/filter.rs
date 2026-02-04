@@ -1,9 +1,14 @@
 use async_trait::async_trait;
+use futures::{stream, stream::FuturesUnordered, StreamExt};
+use std::collections::HashSet;
+use tokio::sync::Semaphore;
+use std::sync::Arc;
 use alloy::{
-    primitives::{FixedBytes, Address, U256, TxKind, Bytes},
+    primitives::{FixedBytes, Address, U256, TxKind, Bytes, B256, b256},
     rpc::types::{
         TransactionRequest, 
         TransactionInput,
+        TransactionReceipt,
         Log,
     },
 };
@@ -17,13 +22,8 @@ use super::{
 // ========================== Codes ==========================
 
 // ERC20 Transfer(address,address,uint256)
-pub const TRANSFER_SIG: FixedBytes<32> = FixedBytes([
-    0xdd, 0xf2, 0x52, 0xad, 0x1b, 0xe2, 0xc8, 0x9b,
-    0x69, 0xc2, 0xb0, 0x68, 0xfc, 0x37, 0x8d, 0xaa,
-    0x95, 0x2b, 0xa7, 0xf1, 0x63, 0xc4, 0xa1, 0x16,
-    0x28, 0xf5, 0x5a, 0x4d, 0xf5, 0x23, 0xb3, 0xef,
-]);
-
+pub const TRANSFER_SIG: B256 =
+    b256!("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
 const BALANCE_OF_SELECTOR: FixedBytes<4> = FixedBytes([
     0x70, 0xa0, 0x82, 0x31, // balanceOf(address)
 ]);
@@ -55,28 +55,26 @@ impl<C: EvmClient> CandidateFilter for BehaviorFilter<C> {
         // 1) receives_token: contract appears as `to` in ERC20 Transfer logs within a small range
         // 2) retains_balance: token balance stays > 0 after N blocks (requires choosing token)
         // 3) has_stake_like_methods: bytecode contains function selectors (rough heuristic)
+        let receipts = self.client.fetch_receipts(tx_hashes, 8).await;
 
-        let receives_token =
-            self.check_receives_token(cand, tx_hashes).await?;
-
-        let has_stake_like_methods =
-            self.check_selectors(cand).await?;
+        let receives = self.check_receives_token_from_receipts(cand, &receipts);
+        let has_stake_like_methods = self.check_selectors(cand).await?;
 
         // retains_balance is hard without knowing token.
         // v1 strategy: if receives_token == true, pick top token(s) seen in Transfer logs and test balance retention.
-        let retains_balance = if receives_token {
-            self.check_retains_balance(cand, tx_hashes)
-                .await
-                .unwrap_or(false)
+        let retains = if receives {
+            self.check_retains_balance_from_receipts(cand, &receipts, 8)
+                .await?
         } else {
             false
         };
+        println!("retains: {}", retains);
 
         let mut pass_count = 0;
-        if receives_token {
+        if receives {
             pass_count += 1;
         }
-        if retains_balance {
+        if retains {
             pass_count += 1;
         }
         if has_stake_like_methods {
@@ -96,8 +94,8 @@ impl<C: EvmClient> CandidateFilter for BehaviorFilter<C> {
             pass,
             confidence,
             signals: FilterSignals {
-                receives_token,
-                retains_balance,
+                receives_token: receives,
+                retains_balance: retains,
                 has_stake_like_methods,
             },
         })
@@ -105,63 +103,75 @@ impl<C: EvmClient> CandidateFilter for BehaviorFilter<C> {
 }
 
 impl<C: EvmClient> BehaviorFilter<C> {
-    async fn check_receives_token(
+
+
+    fn check_receives_token_from_receipts(
         &self,
         cand: &ContractCandidate,
-        tx_hashes: &[TxHash],
-    ) -> Result<bool, ScanError> {
+        receipts: &[(TxHash, TransactionReceipt)],
+    ) -> bool {
         let target = cand.contract;
 
-        for &h in tx_hashes {
-            let receipt = match self.client.provider()
-                .get_transaction_receipt(h.into())
-                .await
-            {
-                Ok(Some(r)) => r,
-                _ => continue,
-            };
+        for (h, receipt) in receipts {
+            println!(
+                "  check_receives_token: tx={} has {} logs",
+                h,
+                receipt.logs().len()
+            );
 
             for log in receipt.logs() {
-                if is_erc20_receive(&log, target) {
-                    return Ok(true);
+                if is_erc20_receive(log, target) {
+                    return true;
                 }
             }
         }
 
-        Ok(false)
+        false
     }
 
-    async fn check_retains_balance(
+    async fn check_retains_balance_from_receipts(
         &self,
         cand: &ContractCandidate,
-        tx_hashes: &[TxHash],
+        receipts: &[(TxHash, TransactionReceipt)],
+        max_concurrency: usize,
     ) -> Result<bool, ScanError> {
         let target = cand.contract;
-        let mut seen_tokens = Vec::<Address>::new();
+        let mut seen_tokens = HashSet::<Address>::new();
 
-        // 1) 从 receipts 中找“接收过的 token”
-        for &h in tx_hashes {
-            let receipt = match self.client.provider()
-                .get_transaction_receipt(h.into())
-                .await
-            {
-                Ok(Some(r)) => r,
-                _ => continue,
-            };
+        for (h, receipt) in receipts {
+            println!(
+                "  check_retains_balance: tx={} has {} logs",
+                h,
+                receipt.logs().len()
+            );
 
             for log in receipt.logs() {
-                if is_erc20_receive(&log, target) {
-                    let token = log.inner.address;
-                    if !seen_tokens.contains(&token) {
-                        seen_tokens.push(token);
-                    }
+                if is_erc20_receive(log, target) {
+                    seen_tokens.insert(log.inner.address);
                 }
             }
         }
 
-        // 2) 对这些 token 调 balanceOf
-        for token in seen_tokens {
-            if self.balance_of(token, target).await? > U256::ZERO {
+        if seen_tokens.is_empty() {
+            return Ok(false);
+        }
+
+        let target = target;
+
+        let mut s = stream::iter(seen_tokens.into_iter())
+            .map(|token| async move {
+                let bal = self.balance_of(token, target).await?;
+                Ok::<(Address, U256), ScanError>((token, bal))
+            })
+            .buffer_unordered(max_concurrency);
+
+        while let Some(res) = s.next().await {
+            let (token, bal) = res?;
+            println!(
+                "  check balance: token={} contract={} balance={}",
+                token, target, bal
+            );
+            if bal > U256::ZERO {
                 return Ok(true);
             }
         }

@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use async_trait::async_trait;
 use super::{
     types::{ChainId, ContractCandidate, DecideOutput},
@@ -27,7 +29,6 @@ impl<C: EvmClient> ContractDiscovery for SimpleDiscovery<C> {
         &self,
         block: u64,
     ) -> Result<DecideOutput, ScanError> {
-        // println!("Discovering contracts in block {}", block);
         let mut new_candidates = Vec::new();
         let mut tx_hashes = Vec::new();
 
@@ -39,14 +40,10 @@ impl<C: EvmClient> ContractDiscovery for SimpleDiscovery<C> {
                 tx_hashes,
             });
         }
-        // println!("  Found {} txs", txs.len());
 
         // 2) inspect receipts
-        for tx in txs {
-            let receipt = match self.client.get_transaction_receipt(tx).await? {
-                Some(r) => r,
-                None => continue,
-            };
+        let receipts = self.client.fetch_receipts(&txs, 8).await;
+        for (tx, receipt) in receipts {
 
             let mut interesting = false;
 
@@ -55,18 +52,19 @@ impl<C: EvmClient> ContractDiscovery for SimpleDiscovery<C> {
                 new_candidates.push(ContractCandidate {
                     chain_id: self.chain_id,
                     contract: addr,
-                    deployed_block: receipt.block_number,
+                    deployed_block: receipt.block_number.unwrap() as u64,
                     verify_attempts: 0,
                     receives_token: None,
                     has_balance: None,
+                    first_receive_block: None,
                 });
 
                 interesting = true;
             }
 
             // (B) logs hint token movement (用于后续验证)
-            for lg in receipt.logs.iter() {
-                if !lg.topics.is_empty() && lg.topics[0] == TRANSFER_SIG.0 {
+            for lg in receipt.logs().iter() {
+                if !lg.topics().is_empty() && lg.topics()[0] == TRANSFER_SIG {
                     interesting = true;
                     break;
                 }

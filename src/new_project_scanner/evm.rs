@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use alloy::{
     primitives::Address,
     providers::Provider,
+    rpc::types::TransactionReceipt,
 };
 use super::{
     types::{BlockNumber, Log, TxHash, TxReceipt},
@@ -52,5 +53,7 @@ pub trait EvmClient: Send + Sync {
     ) -> Result<Option<TxReceipt>, ScanError>;
 
     fn provider(&self) -> & dyn Provider;
+
+    async fn fetch_receipts(&self, tx_hashes: &[TxHash], max_concurrency: usize, ) -> Vec<(TxHash, TransactionReceipt)>;
 }
 

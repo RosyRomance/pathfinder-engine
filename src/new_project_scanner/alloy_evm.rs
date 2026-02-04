@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use std::sync::Arc;
 use std::collections::HashSet;
 use url::{Url, ParseError};
+use futures::{stream, StreamExt};
 use alloy::{
     providers::{
     Provider,
@@ -58,15 +59,16 @@ pub type SharedProvider = Arc<DefaultProvider>;
 
 #[derive(Clone, Debug)]
 pub struct AlloyEvmClient {
-    provider: DefaultProvider,
+    provider: SharedProvider,
 }
 
 impl AlloyEvmClient {
     pub fn new_client(rpc_url: &str) -> Result<Self, ScanError> {
         let url: Url = rpc_url.parse().map_err(|e: ParseError| ScanError::Config(e.to_string()))?;
 
-        let provider = ProviderBuilder::new()
+        let raw_provider = ProviderBuilder::new()
             .connect_http(url);
+        let provider = Arc::new(raw_provider);
 
         Ok(Self { provider })
     }
@@ -225,6 +227,28 @@ impl EvmClient for AlloyEvmClient {
 
     fn provider(&self) -> & dyn Provider {
         &self.provider
+    }
+
+    async fn fetch_receipts(
+        &self,
+        tx_hashes: &[TxHash],
+        max_concurrency: usize,
+    ) -> Vec<(TxHash, TransactionReceipt)> {
+        // 并发拉取 receipts（无 tokio::spawn，因此不需要 'static）
+        stream::iter(tx_hashes.iter().copied())
+            .map(|h| async move {
+                let receipt = self
+                    .provider()
+                    .get_transaction_receipt(h.into())
+                    .await
+                    .ok()
+                    .flatten()?;
+                Some((h, receipt))
+            })
+            .buffer_unordered(max_concurrency)
+            .filter_map(|x| async move { x })
+            .collect()
+            .await
     }
 }
 

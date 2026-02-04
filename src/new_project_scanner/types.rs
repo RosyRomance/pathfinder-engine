@@ -54,10 +54,10 @@ pub struct ContractCandidate {
     pub chain_id: ChainId,
     pub contract: Address,
     pub deployed_block: BlockNumber,
-
-    pub verify_attempts: u32,
     pub receives_token: Option<bool>,
     pub has_balance: Option<bool>,
+    pub verify_attempts: u32,
+    pub first_receive_block: Option<BlockNumber>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
