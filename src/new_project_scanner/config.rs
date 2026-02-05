@@ -15,7 +15,8 @@ pub struct ScannerConfig {
     pub max_candidates_per_run: usize,
 
     pub retain_balance_min_blocks: u64,
-    pub stake_selectors_hex: Vec<String>, // 4-byte selector hex strings
+    pub stake_like_selectors: Vec<String>, // 4-byte selector hex strings
+    pub min_selector_hits: usize, 
     
     pub max_verify_attempts: u32,
 }

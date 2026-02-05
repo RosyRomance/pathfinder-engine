@@ -1,0 +1,48 @@
+Date : 2026-02-04 18:56:44
+Directory : c:\pathfinder
+Total : 18 files,  56971 codes, 14 comments, -7 blanks, all 56978 lines
+
+Languages
++----------+------------+------------+------------+------------+------------+
+| language | files      | code       | comment    | blank      | total      |
++----------+------------+------------+------------+------------+------------+
+| Log      |          1 |     57,014 |          0 |          5 |     57,019 |
+| TOML     |          2 |          5 |          0 |          2 |          7 |
+| Rust     |         15 |        -48 |         14 |        -14 |        -48 |
++----------+------------+------------+------------+------------+------------+
+
+Directories
++----------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                               | files      | code       | comment    | blank      | total      |
++----------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                  |         18 |     56,971 |         14 |         -7 |     56,978 |
+| . (Files)                                          |          3 |     57,019 |          0 |          7 |     57,026 |
+| src                                                |         15 |        -48 |         14 |        -14 |        -48 |
+| src\bin                                            |          2 |         17 |         28 |         13 |         58 |
+| src\new_project_scanner                            |         13 |        -65 |        -14 |        -27 |       -106 |
++----------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++----------------------------------------------------+----------+------------+------------+------------+------------+
+| filename                                           | language | code       | comment    | blank      | total      |
++----------------------------------------------------+----------+------------+------------+------------+------------+
+| c:\pathfinder\Cargo.lock                           | TOML     |          1 |          0 |          0 |          1 |
+| c:\pathfinder\Cargo.toml                           | TOML     |          4 |          0 |          2 |          6 |
+| c:\pathfinder\scanner.log                          | Log      |     57,014 |          0 |          5 |     57,019 |
+| c:\pathfinder\src\bin\new.rs                       | Rust     |         18 |         19 |          7 |         44 |
+| c:\pathfinder\src\bin\test_scanners1.rs            | Rust     |         -1 |          9 |          6 |         14 |
+| c:\pathfinder\src\new_project_scanner\alloy_evm.rs | Rust     |         24 |          1 |          1 |         26 |
+| c:\pathfinder\src\new_project_scanner\config.rs    | Rust     |          2 |          0 |          1 |          3 |
+| c:\pathfinder\src\new_project_scanner\discovery.rs | Rust     |          0 |         -2 |          0 |         -2 |
+| c:\pathfinder\src\new_project_scanner\errors.rs    | Rust     |          2 |          0 |          1 |          3 |
+| c:\pathfinder\src\new_project_scanner\evm.rs       | Rust     |          2 |          0 |          1 |          3 |
+| c:\pathfinder\src\new_project_scanner\filter.rs    | Rust     |         13 |         -5 |          5 |         13 |
+| c:\pathfinder\src\new_project_scanner\inspect.rs   | Rust     |          3 |          0 |          0 |          3 |
+| c:\pathfinder\src\new_project_scanner\inspect0.rs  | Rust     |        -85 |         -7 |        -17 |       -109 |
+| c:\pathfinder\src\new_project_scanner\scanner.rs   | Rust     |        -31 |         -4 |         -9 |        -44 |
+| c:\pathfinder\src\new_project_scanner\scanner0.rs  | Rust     |        -57 |         -1 |        -25 |        -83 |
+| c:\pathfinder\src\new_project_scanner\store.rs     | Rust     |        119 |          6 |         24 |        149 |
+| c:\pathfinder\src\new_project_scanner\store0.rs    | Rust     |        -64 |         -2 |         -9 |        -75 |
+| c:\pathfinder\src\new_project_scanner\types.rs     | Rust     |          7 |          0 |          0 |          7 |
+| Total                                              |          |     56,971 |         14 |         -7 |     56,978 |
++----------------------------------------------------+----------+------------+------------+------------+------------+

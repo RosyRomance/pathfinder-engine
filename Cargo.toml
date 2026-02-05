@@ -23,5 +23,5 @@ name = "test_scanners1"
 path = "src/bin/test_scanners1.rs"
 
 [[bin]]
-name = "test_new"
-path = "src/bin/test_new.rs"
+name = "new"
+path = "src/bin/new.rs"

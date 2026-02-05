@@ -4,6 +4,7 @@ use std::collections::HashSet;
 use tokio::sync::Semaphore;
 use std::sync::Arc;
 use alloy::{
+    hex,
     primitives::{FixedBytes, Address, U256, TxKind, Bytes, B256, b256},
     rpc::types::{
         TransactionRequest, 
@@ -58,7 +59,7 @@ impl<C: EvmClient> CandidateFilter for BehaviorFilter<C> {
         let receipts = self.client.fetch_receipts(tx_hashes, 8).await;
 
         let receives = self.check_receives_token_from_receipts(cand, &receipts);
-        let has_stake_like_methods = self.check_selectors(cand).await?;
+        let has_stake_like_methods = self.check_selectors_score(cand).await?;
 
         // retains_balance is hard without knowing token.
         // v1 strategy: if receives_token == true, pick top token(s) seen in Transfer logs and test balance retention.
@@ -77,7 +78,7 @@ impl<C: EvmClient> CandidateFilter for BehaviorFilter<C> {
         if retains {
             pass_count += 1;
         }
-        if has_stake_like_methods {
+        if has_stake_like_methods > 0 {
             pass_count += 1;
         }
 
@@ -103,8 +104,6 @@ impl<C: EvmClient> CandidateFilter for BehaviorFilter<C> {
 }
 
 impl<C: EvmClient> BehaviorFilter<C> {
-
-
     fn check_receives_token_from_receipts(
         &self,
         cand: &ContractCandidate,
@@ -179,27 +178,30 @@ impl<C: EvmClient> BehaviorFilter<C> {
         Ok(false)
     }
 
-    async fn check_selectors(
+    async fn check_selectors_score(
         &self,
         cand: &ContractCandidate,
-    ) -> Result<bool, ScanError> {
-        let code = self.client.get_code(cand.contract.clone(), Some(cand.deployed_block)).await?;
+    ) -> Result<u8, ScanError> {
+        let code = self.client.get_code(cand.contract, Some(cand.deployed_block)).await?;
         if code.is_empty() {
-            return Ok(false);
+            return Ok(0);
         }
 
-        // Very rough heuristic:
-        // - treat code bytes as blob and search for 4-byte selectors
-        // - not reliable but cheap.
-        let blob = code;
-        for sel_hex in &self.cfg.stake_selectors_hex {
-            if let Ok(sel) = hex4(sel_hex) {
-                if blob.windows(4).any(|w| w == sel) {
-                    return Ok(true);
-                }
+        let blob: &[u8] = code.as_ref();
+        let mut score: u8 = 0;
+
+        for sel_hex in &self.cfg.stake_like_selectors {
+            let sel = match hex4(sel_hex) {
+                Ok(v) => v,
+                Err(_) => continue,
+            };
+
+            if blob.windows(4).any(|w| w == sel) {
+                score = score.saturating_add(1);
             }
         }
-        Ok(false)
+
+        Ok(score)
     }
 
     async fn balance_of(
@@ -231,8 +233,16 @@ impl<C: EvmClient> BehaviorFilter<C> {
 
         Ok(U256::from_be_slice(&raw[raw.len() - 32..]))
     }
-}
 
+    pub async fn inspect_risk(
+        &self,
+        cand: &ContractCandidate,
+        ctx: &dyn RiskContext,
+    ) -> Result<RiskReport, ScanError> {
+        let engine = self.risk_engine(); // 你可以缓存在 self 里
+        engine.run(ctx, cand.contract).map_err(ScanError::Config)
+    }
+}
 
 fn hex4(s: &str) -> Result<[u8; 4], ScanError> {
     // Expect "0x" optional, then 8 hex chars

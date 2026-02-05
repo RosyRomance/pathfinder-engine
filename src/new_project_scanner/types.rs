@@ -140,7 +140,7 @@ pub struct ProjectSnapshot {
 pub struct FilterSignals {
     pub receives_token: bool,
     pub retains_balance: bool,
-    pub has_stake_like_methods: bool,
+    pub has_stake_like_methods: u8,
 }
 
 #[derive(Clone, Debug)]

@@ -25,14 +25,26 @@ async fn main() -> Result<()> {
         lookback_blocks: 1000,
         max_candidates_per_run: 100,
         retain_balance_min_blocks: 10,  
-        stake_selectors_hex: vec![
-            "a694fc3a".to_string(), // deposit()
-            "4e71d92d".to_string(), // stake(uint256)
-            "f8b2cb4f".to_string(), // stakeFor(address,uint256)
-            "2e1a7d4d".to_string(), // withdraw(uint256)
-            "f305d719".to_string(), // addLiquidity(...)
-            "8803dbee".to_string(), // mint(uint256)
+        stake_like_selectors: vec![
+            // classic staking
+            "4e71d92d".to_string(), "2e1a7d4d".to_string(), "3d18b912".to_string(), "e9fad8ee".to_string(),
+
+            // ERC-4626
+            "6e553f65".to_string(), "94bf804d".to_string(), "b460af94".to_string(), "ba087652".to_string(),
+
+            // MasterChef / LP staking
+            "e2bbb158".to_string(), "441a3e70".to_string(), "5312ea8e".to_string(),
+
+            // LST / Restaking
+            "a1903eab".to_string(), "ccee5c2f".to_string(),
+
+            // vote escrow / lock
+            "3f3f8f96".to_string(), "219f5d17".to_string(), "a5f3c23b".to_string(),
+
+            // delegate / bond
+            "5c19a95c".to_string(), "4c1f4d3a".to_string(),
         ],
+        min_selector_hits: 1,
         max_verify_attempts: 100,
     };
 

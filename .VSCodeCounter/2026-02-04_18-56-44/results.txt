@@ -1,0 +1,65 @@
+Date : 2026-02-04 18:56:44
+Directory : c:\pathfinder
+Total : 26 files,  62759 codes, 82 comments, 728 blanks, all 63569 lines
+
+Languages
++----------+------------+------------+------------+------------+------------+
+| language | files      | code       | comment    | blank      | total      |
++----------+------------+------------+------------+------------+------------+
+| Log      |          1 |     57,014 |          0 |          5 |     57,019 |
+| TOML     |          2 |      4,533 |          2 |        477 |      5,012 |
+| Rust     |         17 |      1,161 |         80 |        233 |      1,474 |
+| Markdown |          2 |         26 |          0 |         12 |         38 |
+| XML      |          3 |         25 |          0 |          0 |         25 |
+| YAML     |          1 |          0 |          0 |          1 |          1 |
++----------+------------+------------+------------+------------+------------+
+
+Directories
++----------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                               | files      | code       | comment    | blank      | total      |
++----------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                  |         26 |     62,759 |         82 |        728 |     63,569 |
+| . (Files)                                          |          4 |     61,564 |          2 |        490 |     62,056 |
+| .idea                                              |          3 |         25 |          0 |          0 |         25 |
+| demos                                              |          2 |          9 |          0 |          5 |         14 |
+| demos\staking-lst                                  |          2 |          9 |          0 |          5 |         14 |
+| src                                                |         17 |      1,161 |         80 |        233 |      1,474 |
+| src (Files)                                        |          2 |          4 |          0 |          2 |          6 |
+| src\bin                                            |          2 |         83 |         33 |         19 |        135 |
+| src\client_asset_scanner                           |          1 |          4 |          1 |          2 |          7 |
+| src\new_project_scanner                            |         11 |      1,066 |         45 |        208 |      1,319 |
+| src\optimizer                                      |          1 |          4 |          1 |          2 |          7 |
++----------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++----------------------------------------------------+----------+------------+------------+------------+------------+
+| filename                                           | language | code       | comment    | blank      | total      |
++----------------------------------------------------+----------+------------+------------+------------+------------+
+| c:\pathfinder\.idea\modules.xml                    | XML      |          8 |          0 |          0 |          8 |
+| c:\pathfinder\.idea\pathfinder.iml                 | XML      |         11 |          0 |          0 |         11 |
+| c:\pathfinder\.idea\vcs.xml                        | XML      |          6 |          0 |          0 |          6 |
+| c:\pathfinder\Cargo.lock                           | TOML     |      4,510 |          2 |        472 |      4,984 |
+| c:\pathfinder\Cargo.toml                           | TOML     |         23 |          0 |          5 |         28 |
+| c:\pathfinder\README.md                            | Markdown |         17 |          0 |          8 |         25 |
+| c:\pathfinder\demos\staking-lst\README.md          | Markdown |          9 |          0 |          4 |         13 |
+| c:\pathfinder\demos\staking-lst\config.yaml        | YAML     |          0 |          0 |          1 |          1 |
+| c:\pathfinder\scanner.log                          | Log      |     57,014 |          0 |          5 |     57,019 |
+| c:\pathfinder\src\bin\new.rs                       | Rust     |         18 |         19 |          7 |         44 |
+| c:\pathfinder\src\bin\test_scanners1.rs            | Rust     |         65 |         14 |         12 |         91 |
+| c:\pathfinder\src\client_asset_scanner\mod.rs      | Rust     |          4 |          1 |          2 |          7 |
+| c:\pathfinder\src\lib.rs                           | Rust     |          1 |          0 |          1 |          2 |
+| c:\pathfinder\src\main.rs                          | Rust     |          3 |          0 |          1 |          4 |
+| c:\pathfinder\src\new_project_scanner\alloy_evm.rs | Rust     |        246 |          7 |         41 |        294 |
+| c:\pathfinder\src\new_project_scanner\config.rs    | Rust     |         31 |          1 |          6 |         38 |
+| c:\pathfinder\src\new_project_scanner\discovery.rs | Rust     |         65 |          5 |         14 |         84 |
+| c:\pathfinder\src\new_project_scanner\errors.rs    | Rust     |         14 |          1 |          6 |         21 |
+| c:\pathfinder\src\new_project_scanner\evm.rs       | Rust     |         48 |          0 |         12 |         60 |
+| c:\pathfinder\src\new_project_scanner\filter.rs    | Rust     |        216 |         10 |         38 |        264 |
+| c:\pathfinder\src\new_project_scanner\inspect.rs   | Rust     |         88 |          7 |         17 |        112 |
+| c:\pathfinder\src\new_project_scanner\mod.rs       | Rust     |         10 |          0 |          1 |         11 |
+| c:\pathfinder\src\new_project_scanner\scanner.rs   | Rust     |         96 |          5 |         18 |        119 |
+| c:\pathfinder\src\new_project_scanner\store.rs     | Rust     |        119 |          6 |         25 |        150 |
+| c:\pathfinder\src\new_project_scanner\types.rs     | Rust     |        133 |          3 |         30 |        166 |
+| c:\pathfinder\src\optimizer\mod.rs                 | Rust     |          4 |          1 |          2 |          7 |
+| Total                                              |          |     62,759 |         82 |        728 |     63,569 |
++----------------------------------------------------+----------+------------+------------+------------+------------+
