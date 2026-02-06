@@ -1,11 +1,11 @@
-
+use alloy::primitives::Address;
 
 // ========================== Codes ==========================
 
 #[derive(Debug, Clone)]
 pub struct RiskReport {
     pub chain_id: u64,
-    pub target: alloy_primitives::Address,
+    pub target: Address,
     pub flags: Vec<RiskFlag>,
     pub score: f64,
 }
@@ -27,7 +27,6 @@ pub enum RiskFlag {
     VeryNewContract { age_blocks: u64 },
 
     // --- Other / 其他 ---
-    ProxyAdminIsEOA,
     UnlockDelayTooShort { seconds: u64 },
     NoMinimumLock,
 }

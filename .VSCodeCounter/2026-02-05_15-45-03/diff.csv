@@ -1,0 +1,29 @@
+"filename", "language", "Rust", "MS SQL", "comment", "blank", "total"
+"c:\pathfinder\src\lib.rs", "Rust", 1, 0, 0, 0, 1
+"c:\pathfinder\src\new_project_scanner\detectors\concentration_detector.rs", "Rust", -24, 0, -10, -12, -46
+"c:\pathfinder\src\new_project_scanner\detectors\eoa_detector.rs", "Rust", -19, 0, -2, -6, -27
+"c:\pathfinder\src\new_project_scanner\detectors\inflation_detector.rs", "Rust", -23, 0, -1, -5, -29
+"c:\pathfinder\src\new_project_scanner\detectors\mod.rs", "Rust", -6, 0, -31, -9, -46
+"c:\pathfinder\src\new_project_scanner\detectors\new_contract_detector.rs", "Rust", -15, 0, 0, -3, -18
+"c:\pathfinder\src\new_project_scanner\detectors\owner_detector.rs", "Rust", -50, 0, -5, -15, -70
+"c:\pathfinder\src\new_project_scanner\detectors\tvl_volatility_detector.rs", "Rust", -24, 0, -2, -6, -32
+"c:\pathfinder\src\new_project_scanner\mod.rs", "Rust", -3, 0, 0, 0, -3
+"c:\pathfinder\src\new_project_scanner\risk.rs", "Rust", -80, 0, -15, -24, -119
+"c:\pathfinder\src\new_project_scanner\scorer.rs", "Rust", -43, 0, -5, -10, -58
+"c:\pathfinder\src\new_project_scanner\store.rs", "Rust", -6, 0, 0, 1, -5
+"c:\pathfinder\src\risk\clickhouse.rs", "Rust", 67, 0, 12, 12, 91
+"c:\pathfinder\src\risk\clickhouse.sql", "MS SQL", 0, 33, 3, 9, 45
+"c:\pathfinder\src\risk\context.rs", "Rust", 107, 0, 18, 27, 152
+"c:\pathfinder\src\risk\convert.rs", "Rust", 42, 0, 1, 11, 54
+"c:\pathfinder\src\risk\detectors\concentration_detector.rs", "Rust", 24, 0, 10, 12, 46
+"c:\pathfinder\src\risk\detectors\eoa_detector.rs", "Rust", 19, 0, 2, 6, 27
+"c:\pathfinder\src\risk\detectors\inflation_detector.rs", "Rust", 23, 0, 1, 5, 29
+"c:\pathfinder\src\risk\detectors\mod.rs", "Rust", 6, 0, 31, 9, 46
+"c:\pathfinder\src\risk\detectors\new_contract_detector.rs", "Rust", 15, 0, 0, 3, 18
+"c:\pathfinder\src\risk\detectors\owner_detector.rs", "Rust", 50, 0, 5, 15, 70
+"c:\pathfinder\src\risk\detectors\tvl_volatility_detector.rs", "Rust", 24, 0, 2, 6, 32
+"c:\pathfinder\src\risk\mod.rs", "Rust", 4, 0, 0, 1, 5
+"c:\pathfinder\src\risk\model.rs", "Rust", 18, 0, 5, 8, 31
+"c:\pathfinder\src\risk\risk.rs", "Rust", 80, 0, 15, 24, 119
+"c:\pathfinder\src\risk\scorer.rs", "Rust", 43, 0, 5, 10, 58
+"Total", "-", 230, 33, 39, 69, 371

@@ -1,4 +1,7 @@
-use alloy_primitives::{Address, B256, Bytes};
+use alloy::primitives::{Address, B256, Bytes};
+use super::{
+    scorer::{RiskFlag, RiskReport, RiskScorer},
+};
 
 // ========================== RiskContext ==========================
 
@@ -8,7 +11,7 @@ pub struct SnapshotPoint {
     pub tvl_usd: f64,
 }
 
-pub trait RiskContext: Send + Sync {
+pub trait RiskContext: Send + Sync + std::any::Any {
     // --- chain meta ---
     fn chain_id(&self) -> u64;
     fn now_block(&self) -> u64;
@@ -103,16 +106,15 @@ fn dedup_flags(mut v: Vec<RiskFlag>) -> Vec<RiskFlag> {
 }
 
 fn same_flag_kind(a: &RiskFlag, b: &RiskFlag) -> bool {
-    use RiskFlag::*;
     match (a, b) {
-        (OwnerCanWithdraw, OwnerCanWithdraw) => true,
-        (OwnerCanPause, OwnerCanPause) => true,
-        (RewardParamsMutable, RewardParamsMutable) => true,
-        (RewardTokenInflation, RewardTokenInflation) => true,
-        (ProxyAdminIsEOA, ProxyAdminIsEOA) => true,
-        (TVLConcentrationHigh { .. }, TVLConcentrationHigh { .. }) => true,
-        (TVLVolatilityHigh { .. }, TVLVolatilityHigh { .. }) => true,
-        (VeryNewContract { .. }, VeryNewContract { .. }) => true,
+        (RiskFlag::OwnerCanWithdraw, RiskFlag::OwnerCanWithdraw) => true,
+        (RiskFlag::OwnerCanPause, RiskFlag::OwnerCanPause) => true,
+        (RiskFlag::RewardParamsMutable, RiskFlag::RewardParamsMutable) => true,
+        (RiskFlag::RewardTokenInflation, RiskFlag::RewardTokenInflation) => true,
+        (RiskFlag::ProxyAdminIsEOA, RiskFlag::ProxyAdminIsEOA) => true,
+        (RiskFlag::TVLConcentrationHigh { .. }, RiskFlag::TVLConcentrationHigh { .. }) => true,
+        (RiskFlag::TVLVolatilityHigh { .. }, RiskFlag::TVLVolatilityHigh { .. }) => true,
+        (RiskFlag::VeryNewContract { .. }, RiskFlag::VeryNewContract { .. }) => true,
         _ => false,
     }
 }

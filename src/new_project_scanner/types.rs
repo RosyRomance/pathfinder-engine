@@ -58,6 +58,7 @@ pub struct ContractCandidate {
     pub has_balance: Option<bool>,
     pub verify_attempts: u32,
     pub first_receive_block: Option<BlockNumber>,
+    // pub abi: Option<Abi>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

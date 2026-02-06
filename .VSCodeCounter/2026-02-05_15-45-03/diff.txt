@@ -1,0 +1,60 @@
+Date : 2026-02-05 15:45:03
+Directory : c:\pathfinder
+Total : 27 files,  263 codes, 39 comments, 69 blanks, all 371 lines
+
+Languages
++----------+------------+------------+------------+------------+------------+
+| language | files      | code       | comment    | blank      | total      |
++----------+------------+------------+------------+------------+------------+
+| Rust     |         26 |        230 |         36 |         60 |        326 |
+| MS SQL   |          1 |         33 |          3 |          9 |         45 |
++----------+------------+------------+------------+------------+------------+
+
+Directories
++----------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                       | files      | code       | comment    | blank      | total      |
++----------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                          |         27 |        263 |         39 |         69 |        371 |
+| src                                                                        |         27 |        263 |         39 |         69 |        371 |
+| src (Files)                                                                |          1 |          1 |          0 |          0 |          1 |
+| src\new_project_scanner                                                    |         11 |       -293 |        -71 |        -89 |       -453 |
+| src\new_project_scanner (Files)                                            |          4 |       -132 |        -20 |        -33 |       -185 |
+| src\new_project_scanner\detectors                                          |          7 |       -161 |        -51 |        -56 |       -268 |
+| src\risk                                                                   |         15 |        555 |        110 |        158 |        823 |
+| src\risk (Files)                                                           |          8 |        394 |         59 |        102 |        555 |
+| src\risk\detectors                                                         |          7 |        161 |         51 |         56 |        268 |
++----------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++----------------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| filename                                                                   | language | code       | comment    | blank      | total      |
++----------------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| c:\pathfinder\src\lib.rs                                                   | Rust     |          1 |          0 |          0 |          1 |
+| c:\pathfinder\src\new_project_scanner\detectors\concentration_detector.rs  | Rust     |        -24 |        -10 |        -12 |        -46 |
+| c:\pathfinder\src\new_project_scanner\detectors\eoa_detector.rs            | Rust     |        -19 |         -2 |         -6 |        -27 |
+| c:\pathfinder\src\new_project_scanner\detectors\inflation_detector.rs      | Rust     |        -23 |         -1 |         -5 |        -29 |
+| c:\pathfinder\src\new_project_scanner\detectors\mod.rs                     | Rust     |         -6 |        -31 |         -9 |        -46 |
+| c:\pathfinder\src\new_project_scanner\detectors\new_contract_detector.rs   | Rust     |        -15 |          0 |         -3 |        -18 |
+| c:\pathfinder\src\new_project_scanner\detectors\owner_detector.rs          | Rust     |        -50 |         -5 |        -15 |        -70 |
+| c:\pathfinder\src\new_project_scanner\detectors\tvl_volatility_detector.rs | Rust     |        -24 |         -2 |         -6 |        -32 |
+| c:\pathfinder\src\new_project_scanner\mod.rs                               | Rust     |         -3 |          0 |          0 |         -3 |
+| c:\pathfinder\src\new_project_scanner\risk.rs                              | Rust     |        -80 |        -15 |        -24 |       -119 |
+| c:\pathfinder\src\new_project_scanner\scorer.rs                            | Rust     |        -43 |         -5 |        -10 |        -58 |
+| c:\pathfinder\src\new_project_scanner\store.rs                             | Rust     |         -6 |          0 |          1 |         -5 |
+| c:\pathfinder\src\risk\clickhouse.rs                                       | Rust     |         67 |         12 |         12 |         91 |
+| c:\pathfinder\src\risk\clickhouse.sql                                      | MS SQL   |         33 |          3 |          9 |         45 |
+| c:\pathfinder\src\risk\context.rs                                          | Rust     |        107 |         18 |         27 |        152 |
+| c:\pathfinder\src\risk\convert.rs                                          | Rust     |         42 |          1 |         11 |         54 |
+| c:\pathfinder\src\risk\detectors\concentration_detector.rs                 | Rust     |         24 |         10 |         12 |         46 |
+| c:\pathfinder\src\risk\detectors\eoa_detector.rs                           | Rust     |         19 |          2 |          6 |         27 |
+| c:\pathfinder\src\risk\detectors\inflation_detector.rs                     | Rust     |         23 |          1 |          5 |         29 |
+| c:\pathfinder\src\risk\detectors\mod.rs                                    | Rust     |          6 |         31 |          9 |         46 |
+| c:\pathfinder\src\risk\detectors\new_contract_detector.rs                  | Rust     |         15 |          0 |          3 |         18 |
+| c:\pathfinder\src\risk\detectors\owner_detector.rs                         | Rust     |         50 |          5 |         15 |         70 |
+| c:\pathfinder\src\risk\detectors\tvl_volatility_detector.rs                | Rust     |         24 |          2 |          6 |         32 |
+| c:\pathfinder\src\risk\mod.rs                                              | Rust     |          4 |          0 |          1 |          5 |
+| c:\pathfinder\src\risk\model.rs                                            | Rust     |         18 |          5 |          8 |         31 |
+| c:\pathfinder\src\risk\risk.rs                                             | Rust     |         80 |         15 |         24 |        119 |
+| c:\pathfinder\src\risk\scorer.rs                                           | Rust     |         43 |          5 |         10 |         58 |
+| Total                                                                      |          |        263 |         39 |         69 |        371 |
++----------------------------------------------------------------------------+----------+------------+------------+------------+------------+

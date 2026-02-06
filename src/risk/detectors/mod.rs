@@ -1,9 +1,10 @@
-pub mod concentration_detector;
-pub mod inflation_detector;
-pub mod new_contract_detector;
-pub mod eoa_detector;
-pub mod owner_detector;
+pub mod holder_concentration_detector;
+pub mod reward_inflation_detector;
+pub mod very_new_contract_detector;
+pub mod proxy_admin_eoa_detector;
+pub mod owner_privilege_detector;
 pub mod tvl_volatility_detector;
+pub mod apr_risk_detector;
 
 // pub fn build_default_risk_engine(
 //     share_token: alloy_primitives::Address,
@@ -42,4 +43,14 @@ pub mod tvl_volatility_detector;
 //         detectors,
 //         Box::new(DefaultRiskScorer),
 //     )
+// }
+
+
+// pub async fn inspect_risk(
+//     &self,
+//     cand: &ContractCandidate,
+//     ctx: &dyn RiskContext,
+// ) -> Result<RiskReport, ScanError> {
+//     let engine = self.risk_engine(); // 你可以缓存在 self 里
+//     engine.run(ctx, cand.contract).map_err(ScanError::Config)
 // }

@@ -1,4 +1,6 @@
 pub struct ProxyAdminEoaDetector {
+    // 这里用 EIP-1967 的 admin slot。slot 常量是固定的：
+    // bytes32(uint256(keccak256("eip1967.proxy.admin")) - 1)
     pub eip1967_admin_slot: B256,
 }
 

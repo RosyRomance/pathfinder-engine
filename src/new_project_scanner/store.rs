@@ -12,16 +12,9 @@ use super::{
 // store 需要能读 / 写 pending
 #[async_trait]
 pub trait ProjectStore: Send + Sync {
-    async fn upsert_snapshot(
-        &self,
-        snap: &ProjectSnapshot,
-    ) -> Result<(), ScanError>;
+    async fn upsert_snapshot(&self, snap: &ProjectSnapshot) -> Result<(), ScanError>;
 
-    async fn has_seen_contract(
-        &self,
-        chain_id: ChainId,
-        contract: &Address,
-    ) -> Result<bool, ScanError>;
+    async fn has_seen_contract(&self, chain_id: ChainId, contract: &Address) -> Result<bool, ScanError>;
 
     async fn load_pending(&self, chain_id: u64) -> Result<Vec<ContractCandidate>, ScanError>;
     async fn save_pending(&self, chain_id: u64, cands: &[ContractCandidate]) -> Result<(), ScanError>;
@@ -30,6 +23,8 @@ pub trait ProjectStore: Send + Sync {
     async fn seen(&self) -> Result<HashMap<String, bool>, ScanError>;
     async fn pending_map(&self) -> Result<HashMap<u64, Vec<ContractCandidate>>, ScanError>;
     async fn verified_list(&self) -> Result<Vec<ProjectSnapshot>, ScanError>;
+
+    async fn save_risk_record(&self, record: &RiskRecord) -> Result<(), ScanError>;
 }
 
 // Minimal in-memory store for demo/testing (not persistent).
