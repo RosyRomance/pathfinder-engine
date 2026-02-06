@@ -1,3 +1,12 @@
+use alloy::primitives::{Address, B256};
+use crate::risk::engine::RiskDetector;
+use super::super::{
+    engine::RiskContext, 
+    scorer::RiskFlag,
+};
+
+// ========================== Codes ==========================
+
 pub struct ProxyAdminEoaDetector {
     // 这里用 EIP-1967 的 admin slot。slot 常量是固定的：
     // bytes32(uint256(keccak256("eip1967.proxy.admin")) - 1)

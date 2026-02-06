@@ -1,27 +1,27 @@
 # Diff Summary
 
-Date : 2026-02-04 18:56:44
+Date : 2026-02-06 14:35:21
 
 Directory c:\\pathfinder
 
-Total : 18 files,  56971 codes, 14 comments, -7 blanks, all 56978 lines
+Total : 26 files,  343 codes, 49 comments, 92 blanks, all 484 lines
 
 [Summary](results.md) / [Details](details.md) / Diff Summary / [Diff Details](diff-details.md)
 
 ## Languages
 | language | files | code | comment | blank | total |
 | :--- | ---: | ---: | ---: | ---: | ---: |
-| Log | 1 | 57,014 | 0 | 5 | 57,019 |
-| TOML | 2 | 5 | 0 | 2 | 7 |
-| Rust | 15 | -48 | 14 | -14 | -48 |
+| Rust | 25 | 311 | 44 | 81 | 436 |
+| MS SQL | 1 | 32 | 5 | 11 | 48 |
 
 ## Directories
 | path | files | code | comment | blank | total |
 | :--- | ---: | ---: | ---: | ---: | ---: |
-| . | 18 | 56,971 | 14 | -7 | 56,978 |
-| . (Files) | 3 | 57,019 | 0 | 7 | 57,026 |
-| src | 15 | -48 | 14 | -14 | -48 |
-| src\\bin | 2 | 17 | 28 | 13 | 58 |
-| src\\new_project_scanner | 13 | -65 | -14 | -27 | -106 |
+| . | 26 | 343 | 49 | 92 | 484 |
+| src | 26 | 343 | 49 | 92 | 484 |
+| src\\new_project_scanner | 1 | 0 | 1 | 0 | 1 |
+| src\\risk | 25 | 343 | 48 | 92 | 483 |
+| src\\risk (Files) | 13 | 314 | 37 | 81 | 432 |
+| src\\risk\\detectors | 12 | 29 | 11 | 11 | 51 |
 
 [Summary](results.md) / [Details](details.md) / Diff Summary / [Diff Details](diff-details.md)

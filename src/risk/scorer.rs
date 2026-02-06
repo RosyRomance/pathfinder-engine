@@ -50,6 +50,8 @@ impl RiskScorer for DefaultRiskScorer {
                 RiskFlag::RewardParamsMutable => 0.10,
                 RiskFlag::RewardTokenInflation => 0.08,
                 RiskFlag::VeryNewContract { .. } => 0.05,
+                RiskFlag::UnlockDelayTooShort { .. } => 0.05,
+                RiskFlag::NoMinimumLock => 0.05,
             };
         }
         if s > 1.0 { 1.0 } else { s }

@@ -1,3 +1,13 @@
+use alloy::primitives::Address;
+use crate::risk::engine::RiskDetector;
+use super::super::{
+    engine::RiskContext,
+    context::RiskStore,
+    scorer::RiskFlag,
+};
+
+// ========================== Codes ==========================
+
 pub struct VeryNewContractDetector {
     pub max_age_blocks: u64,
 }

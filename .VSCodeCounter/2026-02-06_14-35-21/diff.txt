@@ -1,0 +1,56 @@
+Date : 2026-02-06 14:35:21
+Directory : c:\pathfinder
+Total : 26 files,  343 codes, 49 comments, 92 blanks, all 484 lines
+
+Languages
++----------+------------+------------+------------+------------+------------+
+| language | files      | code       | comment    | blank      | total      |
++----------+------------+------------+------------+------------+------------+
+| Rust     |         25 |        311 |         44 |         81 |        436 |
+| MS SQL   |          1 |         32 |          5 |         11 |         48 |
++----------+------------+------------+------------+------------+------------+
+
+Directories
++-------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                              | files      | code       | comment    | blank      | total      |
++-------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                 |         26 |        343 |         49 |         92 |        484 |
+| src                                                               |         26 |        343 |         49 |         92 |        484 |
+| src\new_project_scanner                                           |          1 |          0 |          1 |          0 |          1 |
+| src\risk                                                          |         25 |        343 |         48 |         92 |        483 |
+| src\risk (Files)                                                  |         13 |        314 |         37 |         81 |        432 |
+| src\risk\detectors                                                |         12 |         29 |         11 |         11 |         51 |
++-------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| filename                                                          | language | code       | comment    | blank      | total      |
++-------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| c:\pathfinder\src\new_project_scanner\types.rs                    | Rust     |          0 |          1 |          0 |          1 |
+| c:\pathfinder\src\risk\apr.rs                                     | Rust     |        245 |         10 |         55 |        310 |
+| c:\pathfinder\src\risk\apr_detector.rs                            | Rust     |          0 |          1 |          1 |          2 |
+| c:\pathfinder\src\risk\clickhouse.rs                              | Rust     |         15 |          6 |          5 |         26 |
+| c:\pathfinder\src\risk\clickhouse.sql                             | MS SQL   |         32 |          5 |         11 |         48 |
+| c:\pathfinder\src\risk\context.rs                                 | Rust     |        -27 |          9 |         -1 |        -19 |
+| c:\pathfinder\src\risk\convert.rs                                 | Rust     |          3 |          1 |          1 |          5 |
+| c:\pathfinder\src\risk\detectors\apr_risk_detector.rs             | Rust     |         28 |          1 |         10 |         39 |
+| c:\pathfinder\src\risk\detectors\concentration_detector.rs        | Rust     |        -24 |        -10 |        -12 |        -46 |
+| c:\pathfinder\src\risk\detectors\eoa_detector.rs                  | Rust     |        -19 |         -2 |         -6 |        -27 |
+| c:\pathfinder\src\risk\detectors\holder_concentration_detector.rs | Rust     |         24 |         10 |         12 |         46 |
+| c:\pathfinder\src\risk\detectors\inflation_detector.rs            | Rust     |        -23 |         -1 |         -5 |        -29 |
+| c:\pathfinder\src\risk\detectors\mod.rs                           | Rust     |          1 |          8 |          1 |         10 |
+| c:\pathfinder\src\risk\detectors\new_contract_detector.rs         | Rust     |        -15 |          0 |         -3 |        -18 |
+| c:\pathfinder\src\risk\detectors\owner_detector.rs                | Rust     |        -50 |         -5 |        -15 |        -70 |
+| c:\pathfinder\src\risk\detectors\owner_privilege_detector.rs      | Rust     |         50 |          5 |         15 |         70 |
+| c:\pathfinder\src\risk\detectors\proxy_admin_eoa_detector.rs      | Rust     |         19 |          4 |          6 |         29 |
+| c:\pathfinder\src\risk\detectors\reward_inflation_detector.rs     | Rust     |         23 |          1 |          5 |         29 |
+| c:\pathfinder\src\risk\detectors\very_new_contract_detector.rs    | Rust     |         15 |          0 |          3 |         18 |
+| c:\pathfinder\src\risk\engine.rs                                  | Rust     |         82 |         15 |         24 |        121 |
+| c:\pathfinder\src\risk\mod.rs                                     | Rust     |          6 |          0 |          0 |          6 |
+| c:\pathfinder\src\risk\model.rs                                   | Rust     |          0 |          1 |          0 |          1 |
+| c:\pathfinder\src\risk\risk.rs                                    | Rust     |        -80 |        -15 |        -24 |       -119 |
+| c:\pathfinder\src\risk\scorer.rs                                  | Rust     |          0 |          0 |         -1 |         -1 |
+| c:\pathfinder\src\risk\store.rs                                   | Rust     |         38 |          4 |          9 |         51 |
+| c:\pathfinder\src\risk\types.rs                                   | Rust     |          0 |          0 |          1 |          1 |
+| Total                                                             |          |        343 |         49 |         92 |        484 |
++-------------------------------------------------------------------+----------+------------+------------+------------+------------+

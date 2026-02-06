@@ -16,6 +16,10 @@ reqwest = "0.13.1"
 url = "2.5.7"
 chrono = "0.4.43"
 futures = "0.3.31"
+alloy-json-abi = "1.5.4"
+alloy-contract = "1.6.1"
+clickhouse = "0.13.3"
+hex = "0.4.3"
 
 
 [[bin]]

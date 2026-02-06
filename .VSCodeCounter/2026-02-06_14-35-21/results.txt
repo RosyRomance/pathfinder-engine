@@ -1,0 +1,89 @@
+Date : 2026-02-06 14:35:21
+Directory : c:\pathfinder
+Total : 46 files,  63660 codes, 241 comments, 979 blanks, all 64880 lines
+
+Languages
++----------+------------+------------+------------+------------+------------+
+| language | files      | code       | comment    | blank      | total      |
++----------+------------+------------+------------+------------+------------+
+| Log      |          1 |     57,014 |          0 |          5 |     57,019 |
+| TOML     |          2 |      4,533 |          2 |        477 |      5,012 |
+| Rust     |         36 |      1,997 |        231 |        464 |      2,692 |
+| MS SQL   |          1 |         65 |          8 |         20 |         93 |
+| Markdown |          2 |         26 |          0 |         12 |         38 |
+| XML      |          3 |         25 |          0 |          0 |         25 |
+| YAML     |          1 |          0 |          0 |          1 |          1 |
++----------+------------+------------+------------+------------+------------+
+
+Directories
++-------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                              | files      | code       | comment    | blank      | total      |
++-------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                 |         46 |     63,660 |        241 |        979 |     64,880 |
+| . (Files)                                                         |          4 |     61,564 |          2 |        490 |     62,056 |
+| .idea                                                             |          3 |         25 |          0 |          0 |         25 |
+| demos                                                             |          2 |          9 |          0 |          5 |         14 |
+| demos\staking-lst                                                 |          2 |          9 |          0 |          5 |         14 |
+| src                                                               |         37 |      2,062 |        239 |        484 |      2,785 |
+| src (Files)                                                       |          2 |          5 |          0 |          2 |          7 |
+| src\bin                                                           |          2 |         83 |         33 |         19 |        135 |
+| src\client_asset_scanner                                          |          1 |          4 |          1 |          2 |          7 |
+| src\new_project_scanner                                           |         11 |      1,068 |         46 |        209 |      1,323 |
+| src\optimizer                                                     |          1 |          4 |          1 |          2 |          7 |
+| src\risk                                                          |         20 |        898 |        158 |        250 |      1,306 |
+| src\risk (Files)                                                  |         12 |        708 |         96 |        183 |        987 |
+| src\risk\detectors                                                |          8 |        190 |         62 |         67 |        319 |
++-------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| filename                                                          | language | code       | comment    | blank      | total      |
++-------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| c:\pathfinder\.idea\modules.xml                                   | XML      |          8 |          0 |          0 |          8 |
+| c:\pathfinder\.idea\pathfinder.iml                                | XML      |         11 |          0 |          0 |         11 |
+| c:\pathfinder\.idea\vcs.xml                                       | XML      |          6 |          0 |          0 |          6 |
+| c:\pathfinder\Cargo.lock                                          | TOML     |      4,510 |          2 |        472 |      4,984 |
+| c:\pathfinder\Cargo.toml                                          | TOML     |         23 |          0 |          5 |         28 |
+| c:\pathfinder\README.md                                           | Markdown |         17 |          0 |          8 |         25 |
+| c:\pathfinder\demos\staking-lst\README.md                         | Markdown |          9 |          0 |          4 |         13 |
+| c:\pathfinder\demos\staking-lst\config.yaml                       | YAML     |          0 |          0 |          1 |          1 |
+| c:\pathfinder\scanner.log                                         | Log      |     57,014 |          0 |          5 |     57,019 |
+| c:\pathfinder\src\bin\new.rs                                      | Rust     |         18 |         19 |          7 |         44 |
+| c:\pathfinder\src\bin\test_scanners1.rs                           | Rust     |         65 |         14 |         12 |         91 |
+| c:\pathfinder\src\client_asset_scanner\mod.rs                     | Rust     |          4 |          1 |          2 |          7 |
+| c:\pathfinder\src\lib.rs                                          | Rust     |          2 |          0 |          1 |          3 |
+| c:\pathfinder\src\main.rs                                         | Rust     |          3 |          0 |          1 |          4 |
+| c:\pathfinder\src\new_project_scanner\alloy_evm.rs                | Rust     |        246 |          7 |         41 |        294 |
+| c:\pathfinder\src\new_project_scanner\config.rs                   | Rust     |         31 |          1 |          6 |         38 |
+| c:\pathfinder\src\new_project_scanner\discovery.rs                | Rust     |         65 |          5 |         14 |         84 |
+| c:\pathfinder\src\new_project_scanner\errors.rs                   | Rust     |         14 |          1 |          6 |         21 |
+| c:\pathfinder\src\new_project_scanner\evm.rs                      | Rust     |         48 |          0 |         12 |         60 |
+| c:\pathfinder\src\new_project_scanner\filter.rs                   | Rust     |        224 |         10 |         37 |        271 |
+| c:\pathfinder\src\new_project_scanner\inspect.rs                  | Rust     |         88 |          7 |         17 |        112 |
+| c:\pathfinder\src\new_project_scanner\mod.rs                      | Rust     |         10 |          0 |          2 |         12 |
+| c:\pathfinder\src\new_project_scanner\scanner.rs                  | Rust     |         96 |          5 |         18 |        119 |
+| c:\pathfinder\src\new_project_scanner\store.rs                    | Rust     |        113 |          6 |         26 |        145 |
+| c:\pathfinder\src\new_project_scanner\types.rs                    | Rust     |        133 |          4 |         30 |        167 |
+| c:\pathfinder\src\optimizer\mod.rs                                | Rust     |          4 |          1 |          2 |          7 |
+| c:\pathfinder\src\risk\apr.rs                                     | Rust     |        245 |         10 |         55 |        310 |
+| c:\pathfinder\src\risk\apr_detector.rs                            | Rust     |          0 |          1 |          1 |          2 |
+| c:\pathfinder\src\risk\clickhouse.rs                              | Rust     |         82 |         18 |         17 |        117 |
+| c:\pathfinder\src\risk\clickhouse.sql                             | MS SQL   |         65 |          8 |         20 |         93 |
+| c:\pathfinder\src\risk\context.rs                                 | Rust     |         80 |         27 |         26 |        133 |
+| c:\pathfinder\src\risk\convert.rs                                 | Rust     |         45 |          2 |         12 |         59 |
+| c:\pathfinder\src\risk\detectors\apr_risk_detector.rs             | Rust     |         28 |          1 |         10 |         39 |
+| c:\pathfinder\src\risk\detectors\holder_concentration_detector.rs | Rust     |         24 |         10 |         12 |         46 |
+| c:\pathfinder\src\risk\detectors\mod.rs                           | Rust     |          7 |         39 |         10 |         56 |
+| c:\pathfinder\src\risk\detectors\owner_privilege_detector.rs      | Rust     |         50 |          5 |         15 |         70 |
+| c:\pathfinder\src\risk\detectors\proxy_admin_eoa_detector.rs      | Rust     |         19 |          4 |          6 |         29 |
+| c:\pathfinder\src\risk\detectors\reward_inflation_detector.rs     | Rust     |         23 |          1 |          5 |         29 |
+| c:\pathfinder\src\risk\detectors\tvl_volatility_detector.rs       | Rust     |         24 |          2 |          6 |         32 |
+| c:\pathfinder\src\risk\detectors\very_new_contract_detector.rs    | Rust     |         15 |          0 |          3 |         18 |
+| c:\pathfinder\src\risk\engine.rs                                  | Rust     |         82 |         15 |         24 |        121 |
+| c:\pathfinder\src\risk\mod.rs                                     | Rust     |         10 |          0 |          1 |         11 |
+| c:\pathfinder\src\risk\model.rs                                   | Rust     |         18 |          6 |          8 |         32 |
+| c:\pathfinder\src\risk\scorer.rs                                  | Rust     |         43 |          5 |          9 |         57 |
+| c:\pathfinder\src\risk\store.rs                                   | Rust     |         38 |          4 |          9 |         51 |
+| c:\pathfinder\src\risk\types.rs                                   | Rust     |          0 |          0 |          1 |          1 |
+| Total                                                             |          |     63,660 |        241 |        979 |     64,880 |
++-------------------------------------------------------------------+----------+------------+------------+------------+------------+

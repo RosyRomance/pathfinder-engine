@@ -3,6 +3,13 @@ use alloy::{
     providers::Provider,
 };
 use std::sync::Arc;
+use super::{
+    apr::AprScanResult,
+    engine::{
+        SnapshotPoint,
+        RiskContext,
+    },
+};
 
 // ========================== Codes ==========================
 
@@ -43,7 +50,7 @@ pub trait RiskStore: Send + Sync {
 
 impl<P> RiskContext for AlloyRiskContext<P>
 where
-    P: Provider + Send + Sync,
+    P: 'static + Provider + Send + Sync,
 {
     fn chain_id(&self) -> u64 {
         self.chain_id
@@ -65,7 +72,7 @@ where
 
     fn get_storage_at(&self, addr: Address, slot: B256) -> Result<B256, String> {
         self.provider
-            .get_storage_at(addr, slot)
+            .get_storage_at(addr, slot.into())
             .map_err(|e| e.to_string())
     }
 

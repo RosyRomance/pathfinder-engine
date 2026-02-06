@@ -3,6 +3,10 @@ use futures::{stream, stream::FuturesUnordered, StreamExt};
 use std::collections::HashSet;
 use tokio::sync::Semaphore;
 use std::sync::Arc;
+use crate::risk::{
+    scorer::RiskReport,
+    engine::RiskContext,
+};
 use alloy::{
     hex,
     primitives::{FixedBytes, Address, U256, TxKind, Bytes, B256, b256},

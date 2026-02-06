@@ -6,6 +6,7 @@ pub mod owner_privilege_detector;
 pub mod tvl_volatility_detector;
 pub mod apr_risk_detector;
 
+
 // pub fn build_default_risk_engine(
 //     share_token: alloy_primitives::Address,
 //     reward_token: Option<alloy_primitives::Address>,
@@ -54,3 +55,9 @@ pub mod apr_risk_detector;
 //     let engine = self.risk_engine(); // 你可以缓存在 self 里
 //     engine.run(ctx, cand.contract).map_err(ScanError::Config)
 // }
+
+// helper
+pub fn hex_to_bytes4(s: &str) -> [u8; 4] {
+    let bytes = hex::decode(s).expect("invalid hex selector");
+    [bytes[0], bytes[1], bytes[2], bytes[3]]
+}

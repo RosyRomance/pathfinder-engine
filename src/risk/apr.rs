@@ -1,3 +1,17 @@
+use alloy::{
+    primitives::{Address, U256, Bytes},
+    json_abi::{JsonAbi, Function},
+    dyn_abi::{DynSolValue, SolType},
+    rpc::types::{TransactionRequest, TransactionInput},
+};
+
+use crate::new_project_scanner::{
+    evm::EvmClient,
+    errors::ScanError,
+    types::ContractCandidate,
+};
+
+// ========================== RiskContext ==========================
 
 const STAKING_REWARDS_ABI: &str = r#"
 [
@@ -65,11 +79,11 @@ enum RewardModel {
     Unknown,
 }
 
-pub struct AprInspector {
-    provider: Arc<dyn EvmProvider>,
+pub struct AprInspector<C: EvmClient> {
+    client: C,
 }
 
-impl AprInspector {
+impl<C: EvmClient> AprInspector<C> {
     pub async fn inspect(
         &self,
         cand: &ContractCandidate,
@@ -150,21 +164,43 @@ impl AprInspector {
         &self,
         addr: Address,
     ) -> Result<RewardInfo, ScanError> {
-        let c = Contract::new(addr, STAKING_REWARDS_ABI, self.provider.clone());
+        // --- rewardRate() ---
+        let reward_rate: Option<U256> = eth_call_view(
+            &self.provider,
+            addr,
+            "function rewardRate() view returns (uint256)",
+            &[],
+        )
+        .await;
 
-        let reward_rate: Option<U256> =
-            c.call("rewardRate", ()).await.ok();
+        // --- periodFinish() ---
+        let period_finish: Option<U256> = eth_call_view(
+            &self.provider,
+            addr,
+            "function periodFinish() view returns (uint256)",
+            &[],
+        )
+        .await;
 
-        let period_finish: Option<U256> =
-            c.call("periodFinish", ()).await.ok();
+        // --- rewardsToken() ---
+        let reward_token: Option<Address> = eth_call_view(
+            &self.provider,
+            addr,
+            "function rewardsToken() view returns (address)",
+            &[],
+        )
+        .await;
 
-        let reward_token: Option<Address> =
-            c.call("rewardsToken", ()).await.ok();
+        // --- owner() ---
+        let owner: Option<Address> = eth_call_view(
+            &self.provider,
+            addr,
+            "function owner() view returns (address)",
+            &[],
+        )
+        .await;
 
-        let owner: Option<Address> =
-            c.call("owner", ()).await.ok();
-
-        // --- 可持续性估算 ---
+        // --- 可持续性估算（基于 periodFinish） ---
         let remaining_days = if let (Some(rate), Some(finish)) =
             (reward_rate, period_finish)
         {
@@ -181,11 +217,11 @@ impl AprInspector {
         };
 
         Ok(RewardInfo {
-            apr: None, // 不在这里算
+            apr: None,
             reward_rate: reward_rate.map(|v| v.as_u128()),
             reward_tokens: reward_token.into_iter().collect(),
             reward_remaining_days: remaining_days,
-            modifiable: owner.is_some(), // 基本等价于可改
+            modifiable: owner.is_some(),
             owner,
         })
     }
@@ -195,20 +231,43 @@ impl AprInspector {
         chef: Address,
         pid: u64,
     ) -> Result<RewardInfo, ScanError> {
-        let c = Contract::new(chef, MASTERCHEF_ABI, self.provider.clone());
+        // --- rewardPerBlock() ---
+        let reward_per_block: Option<U256> = eth_call_view(
+            &self.provider,
+            chef,
+            "function rewardPerBlock() view returns (uint256)",
+            &[],
+        )
+        .await;
 
-        let reward_per_block: Option<U256> =
-            c.call("rewardPerBlock", ()).await.ok();
+        // --- totalAllocPoint() ---
+        let total_alloc: Option<U256> = eth_call_view(
+            &self.provider,
+            chef,
+            "function totalAllocPoint() view returns (uint256)",
+            &[],
+        )
+        .await;
 
-        let total_alloc: Option<U256> =
-            c.call("totalAllocPoint", ()).await.ok();
+        // --- poolInfo(pid) ---
+        let pool: Option<(Address, U256)> = eth_call_view(
+            &self.provider,
+            chef,
+            "function poolInfo(uint256) view returns (address lpToken, uint256 allocPoint)",
+            &[DynSolValue::Uint(pid.into(), 256)],
+        )
+        .await;
 
-        let pool: Option<(Address, U256)> =
-            c.call("poolInfo", (pid,)).await.ok();
+        // --- owner() ---
+        let owner: Option<Address> = eth_call_view(
+            &self.provider,
+            chef,
+            "function owner() view returns (address)",
+            &[],
+        )
+        .await;
 
-        let owner: Option<Address> =
-            c.call("owner", ()).await.ok();
-
+        // --- 计算该 pool 的 reward rate ---
         let pool_reward = match (reward_per_block, total_alloc, pool.as_ref()) {
             (Some(rpb), Some(total), Some((_, alloc))) if !total.is_zero() => {
                 Some((rpb * *alloc / total).as_u128())
@@ -218,9 +277,9 @@ impl AprInspector {
 
         Ok(RewardInfo {
             apr: None,
-            reward_rate: pool_reward,      // per block
-            reward_tokens: vec![],         // 通常是 protocol token
-            reward_remaining_days: None,   // 需额外算奖励池余额
+            reward_rate: pool_reward,    // per block
+            reward_tokens: vec![],       // MasterChef 通常是协议 token
+            reward_remaining_days: None, // 需单独算奖励池余额
             modifiable: owner.is_some(),
             owner,
         })
@@ -231,7 +290,7 @@ impl AprInspector {
         cand: &ContractCandidate,
         reward: &RewardInfo,
     ) -> Result<SustainResult, ScanError> {
-        // 必要条件不足，直接返回 None
+        // --- 必要条件检查 ---
         if reward.reward_tokens.is_empty() {
             return Ok(SustainResult { remaining_days: None });
         }
@@ -244,16 +303,18 @@ impl AprInspector {
         let mut min_days: Option<f64> = None;
 
         for token in &reward.reward_tokens {
-            let bal = {
-                let c = Contract::new(
-                    *token,
-                    ERC20_BALANCE_ABI,
-                    self.provider.clone(),
-                );
-                match c.call::<_, U256>("balanceOf", (cand.address,)).await {
-                    Ok(v) if !v.is_zero() => v,
-                    _ => continue,
-                }
+            // ERC20.balanceOf(staking_contract)
+            let bal: Option<U256> = eth_call_view(
+                &self.provider,
+                *token,
+                "function balanceOf(address) view returns (uint256)",
+                &[DynSolValue::Address(cand.address)],
+            )
+            .await;
+
+            let bal = match bal {
+                Some(v) if !v.is_zero() => v,
+                _ => continue,
             };
 
             let remaining_seconds = bal.as_u128() as f64 / reward_rate;
@@ -305,5 +366,69 @@ pub struct SustainResult {
     pub remaining_days: Option<f64>,
 }
 
+// ========================== funcs ==========================
 
+pub fn is_staking_rewards_abi(abi: &JsonAbi) -> bool {
+    let mut hit = 0;
 
+    if abi.has_fn("rewardRate") {
+        hit += 1;
+    }
+    if abi.has_fn("periodFinish") {
+        hit += 1;
+    }
+    if abi.has_fn("rewardsToken") {
+        hit += 1;
+    }
+    if abi.has_fn("stakingToken") {
+        hit += 1;
+    }
+
+    // 至少命中 2 个，认为是 StakingRewards
+    hit >= 2
+}
+
+pub fn is_masterchef_abi(abi: &JsonAbi) -> bool {
+    let mut hit = 0;
+
+    if abi.has_fn("rewardPerBlock") {
+        hit += 1;
+    }
+    if abi.has_fn("totalAllocPoint") {
+        hit += 1;
+    }
+    if abi.has_fn("poolInfo") {
+        hit += 1;
+    }
+    if abi.has_fn("poolLength") {
+        hit += 1;
+    }
+
+    // 至少命中 2 个，认为是 MasterChef
+    hit >= 2
+}
+
+async fn eth_call_view<T>(
+    provider: &impl alloy_provider::Provider,
+    target: Address,
+    func_sig: &str,
+    args: &[DynSolValue],
+) -> Option<T>
+where
+    T: SolType,
+{
+    let func = Function::parse(func_sig).ok()?;
+    let calldata = func.abi_encode_input(args).ok()?;
+
+    let tx = TransactionRequest {
+        to: Some(target.into()),
+        input: TransactionInput {
+            input: Some(Bytes::copy_from_slice(&calldata)),
+            data: None,
+        },
+        ..Default::default()
+    };
+
+    let raw = provider.call(tx).await.ok()?;
+    T::abi_decode(&raw).ok()
+}

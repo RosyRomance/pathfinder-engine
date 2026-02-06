@@ -1,3 +1,11 @@
+use alloy::primitives::Address;
+use crate::risk::engine::RiskDetector;
+use super::super::{
+    engine::RiskContext, 
+    scorer::RiskFlag,
+};
+
+// ========================== Codes ==========================
 
 // 4-byte selectors (hex, no 0x prefix)
 const OWNER_WITHDRAW_SELECTORS: &[&str] = &[
@@ -19,6 +27,7 @@ const REWARD_MUTABLE_SELECTORS: &[&str] = &[
     "d4ee1d90", // updateEmissionRate(uint256)
 ];
 
+// ========================== Codes ==========================
 
 pub struct OwnerPrivilegeDetector;
 
@@ -29,7 +38,7 @@ impl RiskDetector for OwnerPrivilegeDetector {
     fn detect(
         &self,
         ctx: &dyn RiskContext,
-        target: alloy_primitives::Address,
+        target: Address,
     ) -> Result<Vec<RiskFlag>, String> {
         let code = ctx.get_code(target)?;
         if code.is_empty() {
@@ -39,7 +48,7 @@ impl RiskDetector for OwnerPrivilegeDetector {
         let mut flags: Vec<RiskFlag> = Vec::new();
 
         let has = |sel: &str| -> bool {
-            let needle = hex_to_bytes4(sel);
+            let needle = super::hex_to_bytes4(sel);
             code.windows(4).any(|w| w == needle)
         };
 
@@ -60,10 +69,4 @@ impl RiskDetector for OwnerPrivilegeDetector {
 
         Ok(flags)
     }
-}
-
-// helper
-fn hex_to_bytes4(s: &str) -> [u8; 4] {
-    let bytes = hex::decode(s).expect("invalid hex selector");
-    [bytes[0], bytes[1], bytes[2], bytes[3]]
 }

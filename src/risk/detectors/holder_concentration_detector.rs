@@ -1,8 +1,18 @@
+use alloy::primitives::Address;
+use crate::risk::engine::RiskDetector;
+use super::super::{
+    engine::RiskContext, 
+    context::RiskStore,
+    scorer::RiskFlag,
+};
+
+// ========================== Codes ==========================
+
 pub struct HolderConcentrationDetector {
     pub top1_threshold: f64,
     pub top3_threshold: f64,
     // share token: staking receipt / lp / share token
-    pub share_token: alloy_primitives::Address,
+    pub share_token: Address,
 }
 
 impl RiskDetector for HolderConcentrationDetector {
@@ -12,7 +22,7 @@ impl RiskDetector for HolderConcentrationDetector {
     fn detect(
         &self,
         ctx: &dyn RiskContext,
-        _target: alloy_primitives::Address,
+        _target: Address,
     ) -> Result<Vec<RiskFlag>, String> {
         let (top1, top3) = ctx.holder_concentration(self.share_token)?;
 

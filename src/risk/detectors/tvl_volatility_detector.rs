@@ -1,3 +1,13 @@
+use alloy::primitives::Address;
+use crate::risk::engine::RiskDetector;
+use super::super::{
+    engine::RiskContext,
+    context::RiskStore,
+    scorer::RiskFlag,
+};
+
+// ========================== Codes ==========================
+
 pub struct TvlVolatilityDetector {
     // e.g. 0.40 means 40% change triggers
     pub threshold_abs_change: f64,

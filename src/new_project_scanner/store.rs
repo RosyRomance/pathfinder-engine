@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use alloy::primitives::Address;
 use tokio::sync::RwLock;
 use std::collections::HashMap;
+use crate::risk::model::RiskRecord;
 use super::{
     types::{ChainId, ProjectSnapshot, ContractCandidate},
     errors::ScanError,
