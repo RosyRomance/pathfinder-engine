@@ -1,4 +1,5 @@
 use alloy::primitives::Address;
+use serde::{Deserialize, Serialize};
 
 // ========================== Codes ==========================
 
@@ -10,7 +11,7 @@ pub struct RiskReport {
     pub score: f64,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum RiskFlag {
     // --- Static / 权限类 ---
     OwnerCanWithdraw,
@@ -29,6 +30,17 @@ pub enum RiskFlag {
     // --- Other / 其他 ---
     UnlockDelayTooShort { seconds: u64 },
     NoMinimumLock,
+
+    // --- Derived / APR 语义类 ---
+    Apr(AprRiskFlag),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum AprRiskFlag {
+    OwnerModifiable,
+    ShortLived,
+    Inflationary,
+    VeryHighApr,
 }
 
 pub trait RiskScorer: Send + Sync {
@@ -52,6 +64,14 @@ impl RiskScorer for DefaultRiskScorer {
                 RiskFlag::VeryNewContract { .. } => 0.05,
                 RiskFlag::UnlockDelayTooShort { .. } => 0.05,
                 RiskFlag::NoMinimumLock => 0.05,
+
+                // ---------- APR 派生风险 ----------
+                RiskFlag::Apr(apr) => match apr {
+                    AprRiskFlag::OwnerModifiable => 0.10,
+                    AprRiskFlag::ShortLived => 0.08,
+                    AprRiskFlag::Inflationary => 0.06,
+                    AprRiskFlag::VeryHighApr => 0.05,
+                },
             };
         }
         if s > 1.0 { 1.0 } else { s }

@@ -1,28 +1,29 @@
-use alloy::primitives::Address;
 use crate::risk::engine::RiskDetector;
+use async_trait::async_trait;
+use crate::finder::types::ContractCandidate;
 use super::super::{
     engine::RiskContext, 
-    scorer::RiskFlag,
-    apr::AprType,
-    context::AprContext,
+    scorer::{RiskFlag, AprRiskFlag},
+    apr_scanner::{AprType, AprContext},
 };
 
 // ========================== Codes ==========================
 
 pub struct AprRiskDetector;
 
+#[async_trait]
 impl RiskDetector for AprRiskDetector {
     fn name(&self) -> &'static str { "apr_risk" }
     fn order(&self) -> u32 { 20 }
 
-    fn detect(&self, ctx: &dyn RiskContext, target: Address) -> Result<Vec<RiskFlag>, String> {
+    async fn detect(&self, ctx: &dyn RiskContext, cand: &ContractCandidate) -> Result<Vec<RiskFlag>, String> {
         // 关键点：尝试把 ctx 当成 AprContext
-        let apr_ctx = match (ctx as &dyn std::any::Any).downcast_ref::<dyn AprContext>() {
+        let apr_ctx = match ctx.apr_ctx() {
             Some(v) => v,
             None => return Ok(vec![]), // 不支持 APR，直接跳过
         };
 
-        let apr = match apr_ctx.apr_scan(target) {
+        let apr = match apr_ctx.apr_scan(cand).await {
             Ok(v) => v,
             Err(_) => return Ok(vec![]),
         };
@@ -30,17 +31,17 @@ impl RiskDetector for AprRiskDetector {
         let mut flags = vec![];
 
         if apr.modifiable {
-            flags.push(RiskFlag::AprOwnerModifiable);
+            flags.push(RiskFlag::Apr(AprRiskFlag::OwnerModifiable));
         }
 
         if let Some(days) = apr.reward_remaining_days {
             if days < 30.0 {
-                flags.push(RiskFlag::AprShortLived);
+                flags.push(RiskFlag::Apr(AprRiskFlag::ShortLived));
             }
         }
 
         if matches!(apr.apr_type, AprType::Inflationary) {
-            flags.push(RiskFlag::AprInflationary);
+            flags.push(RiskFlag::Apr(AprRiskFlag::Inflationary));
         }
 
         Ok(flags)

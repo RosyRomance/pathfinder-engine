@@ -1,0 +1,67 @@
+Date : 2026-02-07 10:50:17
+Directory : c:\pathfinder
+Total : 37 files,  45 codes, 40 comments, 14 blanks, all 99 lines
+
+Languages
++----------+------------+------------+------------+------------+------------+
+| language | files      | code       | comment    | blank      | total      |
++----------+------------+------------+------------+------------+------------+
+| Rust     |         37 |         45 |         40 |         14 |         99 |
++----------+------------+------------+------------+------------+------------+
+
+Directories
++-------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                              | files      | code       | comment    | blank      | total      |
++-------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                 |         37 |         45 |         40 |         14 |         99 |
+| src                                                               |         37 |         45 |         40 |         14 |         99 |
+| src\finder                                                        |         11 |      1,076 |         55 |        209 |      1,340 |
+| src\new_project_scanner                                           |         11 |     -1,077 |        -47 |       -208 |     -1,332 |
+| src\risk                                                          |         15 |         46 |         32 |         13 |         91 |
+| src\risk (Files)                                                  |          8 |         32 |         31 |         13 |         76 |
+| src\risk\detectors                                                |          7 |         14 |          1 |          0 |         15 |
++-------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| filename                                                          | language | code       | comment    | blank      | total      |
++-------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| c:\pathfinder\src\finder\alloy_evm.rs                             | Rust     |        247 |          7 |         41 |        295 |
+| c:\pathfinder\src\finder\config.rs                                | Rust     |         31 |          1 |          6 |         38 |
+| c:\pathfinder\src\finder\discovery.rs                             | Rust     |         66 |          5 |         14 |         85 |
+| c:\pathfinder\src\finder\errors.rs                                | Rust     |         14 |          1 |          6 |         21 |
+| c:\pathfinder\src\finder\evm.rs                                   | Rust     |         48 |          0 |         12 |         60 |
+| c:\pathfinder\src\finder\filter.rs                                | Rust     |        221 |         18 |         37 |        276 |
+| c:\pathfinder\src\finder\inspect.rs                               | Rust     |         88 |          7 |         17 |        112 |
+| c:\pathfinder\src\finder\mod.rs                                   | Rust     |         14 |          1 |          1 |         16 |
+| c:\pathfinder\src\finder\scanner.rs                               | Rust     |         96 |          5 |         18 |        119 |
+| c:\pathfinder\src\finder\store.rs                                 | Rust     |        114 |          7 |         27 |        148 |
+| c:\pathfinder\src\finder\types.rs                                 | Rust     |        137 |          3 |         30 |        170 |
+| c:\pathfinder\src\new_project_scanner\alloy_evm.rs                | Rust     |       -246 |         -7 |        -41 |       -294 |
+| c:\pathfinder\src\new_project_scanner\config.rs                   | Rust     |        -31 |         -1 |         -6 |        -38 |
+| c:\pathfinder\src\new_project_scanner\discovery.rs                | Rust     |        -65 |         -5 |        -14 |        -84 |
+| c:\pathfinder\src\new_project_scanner\errors.rs                   | Rust     |        -14 |         -1 |         -6 |        -21 |
+| c:\pathfinder\src\new_project_scanner\evm.rs                      | Rust     |        -48 |          0 |        -12 |        -60 |
+| c:\pathfinder\src\new_project_scanner\filter.rs                   | Rust     |       -228 |        -10 |        -37 |       -275 |
+| c:\pathfinder\src\new_project_scanner\inspect.rs                  | Rust     |        -88 |         -7 |        -17 |       -112 |
+| c:\pathfinder\src\new_project_scanner\mod.rs                      | Rust     |        -14 |         -1 |         -1 |        -16 |
+| c:\pathfinder\src\new_project_scanner\scanner.rs                  | Rust     |        -96 |         -5 |        -18 |       -119 |
+| c:\pathfinder\src\new_project_scanner\store.rs                    | Rust     |       -114 |         -6 |        -26 |       -146 |
+| c:\pathfinder\src\new_project_scanner\types.rs                    | Rust     |       -133 |         -4 |        -30 |       -167 |
+| c:\pathfinder\src\risk\apr.rs                                     | Rust     |       -348 |        -24 |        -62 |       -434 |
+| c:\pathfinder\src\risk\apr_detector.rs                            | Rust     |          0 |         -1 |         -1 |         -2 |
+| c:\pathfinder\src\risk\apr_scanner.rs                             | Rust     |        360 |         52 |         72 |        484 |
+| c:\pathfinder\src\risk\clickhouse.rs                              | Rust     |          3 |          0 |          0 |          3 |
+| c:\pathfinder\src\risk\context.rs                                 | Rust     |         -3 |          0 |          0 |         -3 |
+| c:\pathfinder\src\risk\detectors\apr_risk_detector.rs             | Rust     |          1 |          0 |          0 |          1 |
+| c:\pathfinder\src\risk\detectors\holder_concentration_detector.rs | Rust     |          2 |          0 |          0 |          2 |
+| c:\pathfinder\src\risk\detectors\owner_privilege_detector.rs      | Rust     |          2 |          0 |          0 |          2 |
+| c:\pathfinder\src\risk\detectors\proxy_admin_eoa_detector.rs      | Rust     |          4 |          1 |          0 |          5 |
+| c:\pathfinder\src\risk\detectors\reward_inflation_detector.rs     | Rust     |          3 |          0 |          0 |          3 |
+| c:\pathfinder\src\risk\detectors\tvl_volatility_detector.rs       | Rust     |          1 |          0 |          0 |          1 |
+| c:\pathfinder\src\risk\detectors\very_new_contract_detector.rs    | Rust     |          1 |          0 |          0 |          1 |
+| c:\pathfinder\src\risk\engine.rs                                  | Rust     |          8 |          1 |          1 |         10 |
+| c:\pathfinder\src\risk\mod.rs                                     | Rust     |          0 |          1 |          0 |          1 |
+| c:\pathfinder\src\risk\scorer.rs                                  | Rust     |         12 |          2 |          3 |         17 |
+| Total                                                             |          |         45 |         40 |         14 |         99 |
++-------------------------------------------------------------------+----------+------------+------------+------------+------------+

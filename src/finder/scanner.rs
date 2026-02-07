@@ -3,10 +3,10 @@ use super::{
     discovery::ContractDiscovery,
     filter::CandidateFilter,
     inspect::CandidateInspector,
-    store::ProjectStore,
     errors::ScanError,
     types::BlockRange,
 };
+use crate::sink::store::ProjectStore;
 
 // ========================== Codes ==========================
 

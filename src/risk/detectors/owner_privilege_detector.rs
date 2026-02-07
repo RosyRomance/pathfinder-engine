@@ -1,5 +1,6 @@
-use alloy::primitives::Address;
 use crate::risk::engine::RiskDetector;
+use crate::finder::types::ContractCandidate;
+use async_trait::async_trait;
 use super::super::{
     engine::RiskContext, 
     scorer::RiskFlag,
@@ -31,16 +32,17 @@ const REWARD_MUTABLE_SELECTORS: &[&str] = &[
 
 pub struct OwnerPrivilegeDetector;
 
+#[async_trait]
 impl RiskDetector for OwnerPrivilegeDetector {
     fn name(&self) -> &'static str { "owner_privilege" }
     fn order(&self) -> u32 { 20 }
 
-    fn detect(
+    async fn detect(
         &self,
         ctx: &dyn RiskContext,
-        target: Address,
+        cand: &ContractCandidate,
     ) -> Result<Vec<RiskFlag>, String> {
-        let code = ctx.get_code(target)?;
+        let code = ctx.get_code(cand.contract).await?;
         if code.is_empty() {
             return Ok(vec![]);
         }

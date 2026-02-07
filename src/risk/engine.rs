@@ -1,6 +1,9 @@
-use alloy::primitives::{Address, B256, Bytes};
+use alloy::primitives::{Address, B256, Bytes, U256};
+use crate::finder::types::ContractCandidate;
+use async_trait::async_trait;
 use super::{
     scorer::{RiskFlag, RiskReport, RiskScorer},
+    apr_scanner::AprContext,
 };
 
 // ========================== RiskContext ==========================
@@ -11,19 +14,20 @@ pub struct SnapshotPoint {
     pub tvl_usd: f64,
 }
 
+#[async_trait]
 pub trait RiskContext: Send + Sync + std::any::Any {
     // --- chain meta ---
     fn chain_id(&self) -> u64;
     fn now_block(&self) -> u64;
 
     // --- contract / code ---
-    fn get_code(&self, addr: Address) -> Result<Bytes, String>;
+    async fn get_code(&self, addr: Address) -> Result<Bytes, String>;
 
     // EIP-1967 admin slot probing (if proxy)
-    fn get_storage_at(&self, addr: Address, slot: B256) -> Result<B256, String>;
+    async fn get_storage_at(&self, addr: Address, slot: B256) -> Result<U256, String>;
 
     // Best-effort: 判断某地址是否 EOA (code len == 0)
-    fn is_eoa(&self, addr: Address) -> Result<bool, String>;
+    async fn is_eoa(&self, addr: Address) -> Result<bool, String>;
 
     // --- token / holders / tvl ---
     // 返回 share token (staking receipt / lp / share) 的 holder 集中度
@@ -34,15 +38,21 @@ pub trait RiskContext: Send + Sync + std::any::Any {
 
     // 合约部署距今多少 blocks (需要你在 discovery 时保存部署块高, 或从 first seen 推断)
     fn contract_age_blocks(&self, target: Address) -> Result<u64, String>;
+
+    /// 如果该 context 支持 APR 分析，返回 AprContext
+    fn apr_ctx(&self) -> Option<&dyn AprContext> {
+        None
+    }
 }
 
 // ========================== RiskDetect ==========================
 
+#[async_trait]
 pub trait RiskDetector: Send + Sync {
     fn name(&self) -> &'static str;
 
     // 执行检测, 返回触发的 flags
-    fn detect(&self, ctx: &dyn RiskContext, target: Address) -> Result<Vec<RiskFlag>, String>;
+    async fn detect(&self, ctx: &dyn RiskContext, cand: &ContractCandidate) -> Result<Vec<RiskFlag>, String>;
 
     // 用于控制执行顺序: 数值越小越早执行
     fn order(&self) -> u32 { 100 }
@@ -65,15 +75,15 @@ impl RiskEngine {
         Self { detectors: d, scorer }
     }
 
-    pub fn run(
+    pub async fn run(
         &self,
         ctx: &dyn RiskContext,
-        target: Address,
+        cand: &ContractCandidate,
     ) -> Result<RiskReport, String> {
         let mut flags: Vec<RiskFlag> = Vec::new();
 
         for det in &self.detectors {
-            let mut out = det.detect(ctx, target)?;
+            let mut out = det.detect(ctx, cand).await?;
             flags.append(&mut out);
         }
 
@@ -84,7 +94,7 @@ impl RiskEngine {
 
         Ok(RiskReport {
             chain_id: ctx.chain_id(),
-            target,
+            target: cand.contract,
             flags,
             score,
         })

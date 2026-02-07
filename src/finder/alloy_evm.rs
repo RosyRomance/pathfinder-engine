@@ -6,6 +6,7 @@ use futures::{stream, StreamExt};
 use alloy::{
     providers::{
     Provider,
+    DynProvider,
     RootProvider,
     Identity,
     ProviderBuilder,
@@ -59,7 +60,7 @@ pub type SharedProvider = Arc<DefaultProvider>;
 
 #[derive(Clone, Debug)]
 pub struct AlloyEvmClient {
-    provider: SharedProvider,
+    provider: DynProvider,
 }
 
 impl AlloyEvmClient {
@@ -68,7 +69,7 @@ impl AlloyEvmClient {
 
         let raw_provider = ProviderBuilder::new()
             .connect_http(url);
-        let provider = Arc::new(raw_provider);
+        let provider = DynProvider::new(raw_provider);
 
         Ok(Self { provider })
     }
@@ -225,7 +226,7 @@ impl EvmClient for AlloyEvmClient {
         Ok(out)
     }
 
-    fn provider(&self) -> & dyn Provider {
+    fn provider(&self) -> & DynProvider {
         &self.provider
     }
 

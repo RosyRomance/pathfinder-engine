@@ -2825,6 +2825,7 @@ dependencies = [
  "hex",
  "reqwest 0.13.1",
  "serde",
+ "serde_json",
  "thiserror 1.0.69",
  "tokio",
  "url",

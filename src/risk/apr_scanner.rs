@@ -1,95 +1,43 @@
 use alloy::{
-    primitives::{Address, U256, Bytes},
-    json_abi::{JsonAbi, Function},
-    dyn_abi::{DynSolValue, SolType},
-    rpc::types::{TransactionRequest, TransactionInput},
+    primitives::{Address, U256, Bytes, },
+    json_abi::{JsonAbi, Function,},
+    dyn_abi::{DynSolValue, SolType, JsonAbiExt},
+    rpc::types::{TransactionRequest, TransactionInput, BlockNumberOrTag, BlockId},
+    providers::{Provider, DynProvider},
+    sol_types::sol_data::Uint, 
 };
+use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 
-use crate::new_project_scanner::{
+use crate::finder::{
     evm::EvmClient,
     errors::ScanError,
     types::ContractCandidate,
 };
+use super::{
+    context::AlloyRiskContext,
+    scorer::AprRiskFlag,
+};
 
-// ========================== RiskContext ==========================
 
-const STAKING_REWARDS_ABI: &str = r#"
-[
-  {"name":"rewardRate","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"name":"periodFinish","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"name":"rewardsToken","outputs":[{"type":"address"}],"stateMutability":"view","type":"function"},
-  {"name":"owner","outputs":[{"type":"address"}],"stateMutability":"view","type":"function"}
-]
-"#;
+// ========================== Codes ==========================
 
-const MASTERCHEF_ABI: &str = r#"
-[
-  {"name":"rewardPerBlock","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"name":"totalAllocPoint","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"name":"poolInfo","inputs":[{"type":"uint256"}],"outputs":[
-    {"name":"lpToken","type":"address"},
-    {"name":"allocPoint","type":"uint256"}
-  ],"stateMutability":"view","type":"function"},
-  {"name":"owner","outputs":[{"type":"address"}],"stateMutability":"view","type":"function"}
-]
-"#;
-
-const ERC20_BALANCE_ABI: &str = r#"
-[
-  {"name":"balanceOf","inputs":[{"type":"address"}],
-   "outputs":[{"type":"uint256"}],
-   "stateMutability":"view","type":"function"}
-]
-"#;
-
-#[derive(Debug, Clone)]
-pub struct AprScanResult {
-    pub nominal_apr: Option<f64>,     // 可以算就填，算不了就 None
-    pub apr_type: AprType,             // 通胀 / 手续费 / 混合 / 固定承诺
-    pub reward_tokens: Vec<Address>,
-
-    pub reward_rate: Option<u128>,     // 每秒 / 每块
-    pub reward_remaining_days: Option<f64>,
-
-    pub modifiable: bool,              // 是否可被 owner 修改
-    pub owner: Option<Address>,
-
-    pub risk_flags: Vec<AprRiskFlag>,
+#[async_trait]
+pub trait AprContext {
+    async fn apr_scan(&self, cand: &ContractCandidate) -> Result<AprScanResult, ScanError>;
 }
 
-pub enum AprType {
-    Inflationary,
-    FeeSharing,
-    Mixed,
-    FixedPromise,   // 高危
-    Unknown,
-}
-
-pub enum AprRiskFlag {
-    ShortLivedRewards,
-    OwnerCanModifyRewards,
-    VeryHighApr,
-    AprWithoutCap,
-}
-
-enum RewardModel {
-    MasterChef { pid: u64 },
-    StakingRewards,
-    // Gauge,
-    Unknown,
-}
-
-pub struct AprInspector<C: EvmClient> {
-    client: C,
-}
-
-impl<C: EvmClient> AprInspector<C> {
-    pub async fn inspect(
+#[async_trait]
+impl<C> AprContext for AlloyRiskContext<C> 
+where
+    C: EvmClient + Send + Sync + 'static,
+{
+    async fn apr_scan(
         &self,
         cand: &ContractCandidate,
     ) -> Result<AprScanResult, ScanError> {
         // 1️⃣ 识别奖励模型
-        let model = self.detect_reward_model(cand).await?;
+        let model = self.detect_reward_model(cand).await;
 
         // 2️⃣ 读取奖励参数
         let reward_info = self.read_reward_info(cand, &model).await?;
@@ -111,6 +59,109 @@ impl<C: EvmClient> AprInspector<C> {
             risk_flags,
         })
     }
+}
+
+// ========================== Codes ==========================
+
+#[derive(Debug, Clone)]
+pub struct AprScanResult {
+    pub nominal_apr: Option<f64>,     // 可以算就填，算不了就 None
+    pub apr_type: AprType,             // 通胀 / 手续费 / 混合 / 固定承诺
+    pub reward_tokens: Vec<Address>,
+
+    pub reward_rate: Option<u128>,     // 每秒 / 每块
+    pub reward_remaining_days: Option<f64>,
+
+    pub modifiable: bool,              // 是否可被 owner 修改
+    pub owner: Option<Address>,
+
+    pub risk_flags: Vec<AprRiskFlag>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum AprType {
+    FixedEmission,     // 固定发放速率（StakingRewards）
+    Inflationary,      // 通胀模型（MasterChef）
+    Variable,          // 可变 / Gauge / Vote
+    ExternalYield,     // 外部真实收益（手续费分成）
+    Unknown,
+}
+
+// #[derive(Debug, Clone)]
+// pub enum AprRiskFlag {
+//     ShortLivedRewards,
+//     OwnerCanModifyRewards,
+//     VeryHighApr,
+//     AprWithoutCap,
+// }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum RewardModel {
+    MasterChef { pid: u64 },
+    StakingRewards,
+    // Gauge,
+    Unknown,
+}
+
+impl RewardModel {
+    pub fn apr_type(&self) -> AprType {
+        match self {
+            RewardModel::StakingRewards => AprType::FixedEmission,
+            RewardModel::MasterChef { .. } => AprType::Inflationary,
+            // RewardModel::Gauge => AprType::Variable,
+            RewardModel::Unknown => AprType::Unknown,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct RewardInfo {
+    pub apr: Option<f64>,
+    pub reward_rate: Option<u128>,          // per second or per block
+    pub reward_tokens: Vec<Address>,
+    pub reward_remaining_days: Option<f64>,
+    pub modifiable: bool,
+    pub owner: Option<Address>,
+}
+
+pub struct SustainResult {
+    pub remaining_days: Option<f64>,
+}
+
+
+// ========================== Codes ==========================
+
+impl<C: EvmClient> AlloyRiskContext<C> 
+where
+    C: EvmClient + Send + Sync + 'static,
+{
+    // pub async fn inspect(
+    //     &self,
+    //     cand: &ContractCandidate,
+    // ) -> Result<AprScanResult, ScanError> {
+    //     // 1️⃣ 识别奖励模型
+    //     let model = self.detect_reward_model(cand).await?;
+
+    //     // 2️⃣ 读取奖励参数
+    //     let reward_info = self.read_reward_info(cand, &model).await?;
+
+    //     // 3️⃣ 可持续性分析
+    //     let sustain = self.analyze_sustainability(cand, &reward_info).await?;
+
+    //     // 4️⃣ 风险标记
+    //     let risk_flags = self.evaluate_risk(&reward_info, &sustain);
+
+    //     Ok(AprScanResult {
+    //         nominal_apr: reward_info.apr,
+    //         apr_type: model.apr_type(),
+    //         reward_tokens: reward_info.reward_tokens,
+    //         reward_rate: reward_info.reward_rate,
+    //         reward_remaining_days: sustain.remaining_days,
+    //         modifiable: reward_info.modifiable,
+    //         owner: reward_info.owner,
+    //         risk_flags,
+    //     })
+    // }
 
     pub async fn detect_reward_model(
         &self,
@@ -142,11 +193,11 @@ impl<C: EvmClient> AprInspector<C> {
     ) -> Result<RewardInfo, ScanError> {
         match model {
             RewardModel::StakingRewards => {
-                self.read_staking_rewards(cand.address).await
+                self.read_staking_rewards(cand.contract).await
             }
 
             RewardModel::MasterChef { pid } => {
-                self.read_masterchef_pool(cand.address, *pid).await
+                self.read_masterchef_pool(cand.contract, *pid).await
             }
 
             RewardModel::Unknown => Ok(RewardInfo {
@@ -165,8 +216,8 @@ impl<C: EvmClient> AprInspector<C> {
         addr: Address,
     ) -> Result<RewardInfo, ScanError> {
         // --- rewardRate() ---
-        let reward_rate: Option<U256> = eth_call_view(
-            &self.provider,
+        let reward_rate: Option<U256> = eth_call_view::<Uint<256>> (
+            &self.client.provider(),
             addr,
             "function rewardRate() view returns (uint256)",
             &[],
@@ -174,8 +225,8 @@ impl<C: EvmClient> AprInspector<C> {
         .await;
 
         // --- periodFinish() ---
-        let period_finish: Option<U256> = eth_call_view(
-            &self.provider,
+        let period_finish: Option<U256> = eth_call_view::<Uint<256>> (
+            &self.client.provider(),
             addr,
             "function periodFinish() view returns (uint256)",
             &[],
@@ -183,8 +234,8 @@ impl<C: EvmClient> AprInspector<C> {
         .await;
 
         // --- rewardsToken() ---
-        let reward_token: Option<Address> = eth_call_view(
-            &self.provider,
+        let reward_token: Option<Address> = eth_call_view::<alloy::sol_types::sol_data::Address> (
+            &self.client.provider(),
             addr,
             "function rewardsToken() view returns (address)",
             &[],
@@ -192,8 +243,8 @@ impl<C: EvmClient> AprInspector<C> {
         .await;
 
         // --- owner() ---
-        let owner: Option<Address> = eth_call_view(
-            &self.provider,
+        let owner: Option<Address> = eth_call_view::<alloy::sol_types::sol_data::Address> (
+            &self.client.provider(),
             addr,
             "function owner() view returns (address)",
             &[],
@@ -204,8 +255,19 @@ impl<C: EvmClient> AprInspector<C> {
         let remaining_days = if let (Some(rate), Some(finish)) =
             (reward_rate, period_finish)
         {
-            let now = self.provider.block_timestamp().await.unwrap_or(0);
-            let finish = finish.as_u64();
+            let provider = self.client.provider();
+
+            // 取最新区块
+            let block = provider
+                .get_block(BlockId::Number(BlockNumberOrTag::Latest))
+                .await
+                .ok()
+                .flatten()
+                .expect(" get latest block number ERROR");
+
+            // block.timestamp 是 U256 / u64（取决于 network）
+            let now: u64 = block.header.timestamp;
+            let finish = finish.to::<u64>();
 
             if finish > now && !rate.is_zero() {
                 Some(((finish - now) as f64) / 86400.0)
@@ -218,7 +280,7 @@ impl<C: EvmClient> AprInspector<C> {
 
         Ok(RewardInfo {
             apr: None,
-            reward_rate: reward_rate.map(|v| v.as_u128()),
+            reward_rate: reward_rate.map(|v| v.to::<u128>()),
             reward_tokens: reward_token.into_iter().collect(),
             reward_remaining_days: remaining_days,
             modifiable: owner.is_some(),
@@ -232,8 +294,8 @@ impl<C: EvmClient> AprInspector<C> {
         pid: u64,
     ) -> Result<RewardInfo, ScanError> {
         // --- rewardPerBlock() ---
-        let reward_per_block: Option<U256> = eth_call_view(
-            &self.provider,
+        let reward_per_block: Option<U256> = eth_call_view::<Uint<256>> (
+            &self.client.provider(),
             chef,
             "function rewardPerBlock() view returns (uint256)",
             &[],
@@ -241,8 +303,8 @@ impl<C: EvmClient> AprInspector<C> {
         .await;
 
         // --- totalAllocPoint() ---
-        let total_alloc: Option<U256> = eth_call_view(
-            &self.provider,
+        let total_alloc: Option<U256> = eth_call_view::<Uint<256>> (
+            &self.client.provider(),
             chef,
             "function totalAllocPoint() view returns (uint256)",
             &[],
@@ -250,17 +312,17 @@ impl<C: EvmClient> AprInspector<C> {
         .await;
 
         // --- poolInfo(pid) ---
-        let pool: Option<(Address, U256)> = eth_call_view(
-            &self.provider,
+        let pool: Option<(Address, U256)> = eth_call_view::<(alloy::sol_types::sol_data::Address, Uint<256>)> (
+            &self.client.provider(),
             chef,
             "function poolInfo(uint256) view returns (address lpToken, uint256 allocPoint)",
-            &[DynSolValue::Uint(pid.into(), 256)],
+            &[DynSolValue::Uint(U256::from(pid), 256)],
         )
         .await;
 
         // --- owner() ---
-        let owner: Option<Address> = eth_call_view(
-            &self.provider,
+        let owner: Option<Address> = eth_call_view::<alloy::sol_types::sol_data::Address> (
+            &self.client.provider(),
             chef,
             "function owner() view returns (address)",
             &[],
@@ -270,7 +332,7 @@ impl<C: EvmClient> AprInspector<C> {
         // --- 计算该 pool 的 reward rate ---
         let pool_reward = match (reward_per_block, total_alloc, pool.as_ref()) {
             (Some(rpb), Some(total), Some((_, alloc))) if !total.is_zero() => {
-                Some((rpb * *alloc / total).as_u128())
+                Some((rpb * *alloc / total).to::<u128>())
             }
             _ => None,
         };
@@ -304,11 +366,11 @@ impl<C: EvmClient> AprInspector<C> {
 
         for token in &reward.reward_tokens {
             // ERC20.balanceOf(staking_contract)
-            let bal: Option<U256> = eth_call_view(
-                &self.provider,
+            let bal: Option<U256> = eth_call_view::<Uint<256>> (
+                &self.client.provider(),
                 *token,
                 "function balanceOf(address) view returns (uint256)",
-                &[DynSolValue::Address(cand.address)],
+                &[DynSolValue::Address(cand.contract)],
             )
             .await;
 
@@ -317,7 +379,7 @@ impl<C: EvmClient> AprInspector<C> {
                 _ => continue,
             };
 
-            let remaining_seconds = bal.as_u128() as f64 / reward_rate;
+            let remaining_seconds = bal.to::<u128>() as f64 / reward_rate;
             let days = remaining_seconds / 86400.0;
 
             min_days = match min_days {
@@ -339,7 +401,7 @@ impl<C: EvmClient> AprInspector<C> {
         let mut out = vec![];
 
         if reward.modifiable {
-            out.push(AprRiskFlag::OwnerCanModifyRewards);
+            out.push(AprRiskFlag::OwnerModifiable);
         }
 
         if let Some(apr) = reward.apr {
@@ -352,35 +414,24 @@ impl<C: EvmClient> AprInspector<C> {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct RewardInfo {
-    pub apr: Option<f64>,
-    pub reward_rate: Option<u128>,          // per second or per block
-    pub reward_tokens: Vec<Address>,
-    pub reward_remaining_days: Option<f64>,
-    pub modifiable: bool,
-    pub owner: Option<Address>,
-}
-
-pub struct SustainResult {
-    pub remaining_days: Option<f64>,
-}
-
 // ========================== funcs ==========================
+fn abi_has_fn(abi: &JsonAbi, name: &str) -> bool {
+    abi.functions.contains_key(name)
+}
 
 pub fn is_staking_rewards_abi(abi: &JsonAbi) -> bool {
     let mut hit = 0;
 
-    if abi.has_fn("rewardRate") {
+    if abi_has_fn(abi, "rewardRate") {
         hit += 1;
     }
-    if abi.has_fn("periodFinish") {
+    if abi_has_fn(abi, "periodFinish") {
         hit += 1;
     }
-    if abi.has_fn("rewardsToken") {
+    if abi_has_fn(abi, "rewardsToken") {
         hit += 1;
     }
-    if abi.has_fn("stakingToken") {
+    if abi_has_fn(abi, "stakingToken") {
         hit += 1;
     }
 
@@ -391,16 +442,16 @@ pub fn is_staking_rewards_abi(abi: &JsonAbi) -> bool {
 pub fn is_masterchef_abi(abi: &JsonAbi) -> bool {
     let mut hit = 0;
 
-    if abi.has_fn("rewardPerBlock") {
+    if abi_has_fn(abi, "rewardPerBlock") {
         hit += 1;
     }
-    if abi.has_fn("totalAllocPoint") {
+    if abi_has_fn(abi, "totalAllocPoint") {
         hit += 1;
     }
-    if abi.has_fn("poolInfo") {
+    if abi_has_fn(abi, "poolInfo") {
         hit += 1;
     }
-    if abi.has_fn("poolLength") {
+    if abi_has_fn(abi, "poolLength") {
         hit += 1;
     }
 
@@ -409,11 +460,11 @@ pub fn is_masterchef_abi(abi: &JsonAbi) -> bool {
 }
 
 async fn eth_call_view<T>(
-    provider: &impl alloy_provider::Provider,
+    provider: &DynProvider,
     target: Address,
     func_sig: &str,
     args: &[DynSolValue],
-) -> Option<T>
+) -> Option<T::RustType>
 where
     T: SolType,
 {

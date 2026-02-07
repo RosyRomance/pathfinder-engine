@@ -1,10 +1,12 @@
 use alloy::{
-    primitives::{Address, B256, Bytes},
+    primitives::{Address, B256, Bytes, U256},
     providers::Provider,
 };
 use std::sync::Arc;
+use async_trait::async_trait;
+use crate::finder::evm::EvmClient;
 use super::{
-    apr::AprScanResult,
+    apr_scanner::{AprScanResult, AprContext},
     engine::{
         SnapshotPoint,
         RiskContext,
@@ -13,9 +15,9 @@ use super::{
 
 // ========================== Codes ==========================
 
-pub struct AlloyRiskContext<P> {
+pub struct AlloyRiskContext<C: EvmClient> {
     pub chain_id: u64,
-    pub provider: Arc<P>,
+    pub client: C,
 
     // 可选：项目存储，用于 TVL / holder / 历史
     pub store: Arc<dyn RiskStore>,
@@ -48,9 +50,10 @@ pub trait RiskStore: Send + Sync {
 
 // ========================== Codes ==========================
 
-impl<P> RiskContext for AlloyRiskContext<P>
+#[async_trait]
+impl<C> RiskContext for AlloyRiskContext<C>
 where
-    P: 'static + Provider + Send + Sync,
+    C: 'static + EvmClient + Send + Sync,
 {
     fn chain_id(&self) -> u64 {
         self.chain_id
@@ -64,20 +67,22 @@ where
     // code / storage
     // -----------------------------
 
-    fn get_code(&self, addr: Address) -> Result<Bytes, String> {
-        self.provider
+    async fn get_code(&self, addr: Address) -> Result<Bytes, String> {
+        self.client.provider()
             .get_code_at(addr)
+            .await
             .map_err(|e| e.to_string())
     }
 
-    fn get_storage_at(&self, addr: Address, slot: B256) -> Result<B256, String> {
-        self.provider
+    async fn get_storage_at(&self, addr: Address, slot: B256) -> Result<U256, String> {
+        self.client.provider()
             .get_storage_at(addr, slot.into())
+            .await
             .map_err(|e| e.to_string())
     }
 
-    fn is_eoa(&self, addr: Address) -> Result<bool, String> {
-        let code = self.get_code(addr)?;
+    async fn is_eoa(&self, addr: Address) -> Result<bool, String> {
+        let code = self.get_code(addr).await?;
         Ok(code.is_empty())
     }
 
@@ -105,6 +110,10 @@ where
     ) -> Result<u64, String> {
         self.store.contract_age_blocks(target, self.now_block)
     }
+
+    fn apr_ctx(&self) -> Option<&dyn AprContext> {
+        Some(self)
+    }
 }
 
 
@@ -125,15 +134,3 @@ where
 
 
 // ========================== Codes ==========================
-pub trait AprContext {
-    fn apr_scan(&self, target: Address) -> Result<AprScanResult, String>;
-}
-
-impl<P> AprContext for AlloyRiskContext<P> 
-where
-    P: Provider + Send + Sync,
-{
-    fn apr_scan(&self, target: Address) -> Result<AprScanResult, String> {
-        self.apr_inspector.inspect(target)
-    }
-}

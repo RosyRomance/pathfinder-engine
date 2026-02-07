@@ -57,6 +57,7 @@ impl<C: EvmClient> ContractDiscovery for SimpleDiscovery<C> {
                     receives_token: None,
                     has_balance: None,
                     first_receive_block: None,
+                    abi: None,
                 });
 
                 interesting = true;

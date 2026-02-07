@@ -18,4 +18,7 @@ pub enum ScanError {
 
     #[error("runtime error: {0}")]
     Runtime(String),
+
+    #[error("serde error: {0}")]
+    Serde(String)
 }

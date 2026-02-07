@@ -1,8 +1,8 @@
-use alloy::primitives::Address;
 use crate::risk::engine::RiskDetector;
+use async_trait::async_trait;
+use crate::finder::types::ContractCandidate;
 use super::super::{
     engine::RiskContext,
-    context::RiskStore,
     scorer::RiskFlag,
 };
 
@@ -13,12 +13,13 @@ pub struct TvlVolatilityDetector {
     pub threshold_abs_change: f64,
 }
 
+#[async_trait]
 impl RiskDetector for TvlVolatilityDetector {
     fn name(&self) -> &'static str { "tvl_volatility_24h" }
     fn order(&self) -> u32 { 200 }
 
-    fn detect(&self, ctx: &dyn RiskContext, target: Address) -> Result<Vec<RiskFlag>, String> {
-        let hist = ctx.tvl_history_24h(target)?;
+    async fn detect(&self, ctx: &dyn RiskContext, cand: &ContractCandidate) -> Result<Vec<RiskFlag>, String> {
+        let hist = ctx.tvl_history_24h(cand.contract)?;
         if hist.len() < 2 {
             return Ok(vec![]);
         }

@@ -1,5 +1,8 @@
 use serde::{Serialize, Deserialize};
-pub use alloy::primitives::{Address, B256, FixedBytes};
+pub use alloy::{
+    primitives::{Address, B256, FixedBytes},
+    json_abi::JsonAbi,
+};
 
 
 pub type ChainId = u64;
@@ -58,7 +61,7 @@ pub struct ContractCandidate {
     pub has_balance: Option<bool>,
     pub verify_attempts: u32,
     pub first_receive_block: Option<BlockNumber>,
-    // pub abi: Option<Abi>,
+    pub abi: Option<JsonAbi>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

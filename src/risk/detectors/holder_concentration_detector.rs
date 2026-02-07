@@ -1,8 +1,9 @@
 use alloy::primitives::Address;
 use crate::risk::engine::RiskDetector;
+use crate::finder::types::ContractCandidate;
+use async_trait::async_trait;
 use super::super::{
     engine::RiskContext, 
-    context::RiskStore,
     scorer::RiskFlag,
 };
 
@@ -15,14 +16,15 @@ pub struct HolderConcentrationDetector {
     pub share_token: Address,
 }
 
+#[async_trait]
 impl RiskDetector for HolderConcentrationDetector {
     fn name(&self) -> &'static str { "holder_concentration" }
     fn order(&self) -> u32 { 150 }
 
-    fn detect(
+    async fn detect(
         &self,
         ctx: &dyn RiskContext,
-        _target: Address,
+        cand: &ContractCandidate,
     ) -> Result<Vec<RiskFlag>, String> {
         let (top1, top3) = ctx.holder_concentration(self.share_token)?;
 

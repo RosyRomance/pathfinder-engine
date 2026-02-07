@@ -1,4 +1,34 @@
 -- 4.1 建表 SQL
+CREATE TABLE pending_contracts (
+    chain_id UInt64,
+    contract String,
+    deployed_block UInt64,
+    receives_token Nullable(UInt8),
+    has_balance Nullable(UInt8),
+    verify_attempts UInt32,
+    first_receive_block Nullable(UInt64),
+    abi String
+)
+ENGINE = ReplacingMergeTree
+ORDER BY (chain_id, contract);
+
+CREATE TABLE verified_projects (
+    chain_id UInt64,
+    staking_contract String,
+    snapshot_json String
+)
+ENGINE = ReplacingMergeTree
+ORDER BY (chain_id, staking_contract);
+
+
+
+
+
+
+
+
+
+
 CREATE TABLE IF NOT EXISTS risk_records
 (
     chain_id UInt64,

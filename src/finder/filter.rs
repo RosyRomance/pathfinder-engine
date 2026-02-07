@@ -16,6 +16,7 @@ use alloy::{
         TransactionReceipt,
         Log,
     },
+    providers::Provider,
 };
 use super::{
     types::{ContractCandidate, FilterDecision, FilterSignals, TxHash},
@@ -238,14 +239,14 @@ impl<C: EvmClient> BehaviorFilter<C> {
         Ok(U256::from_be_slice(&raw[raw.len() - 32..]))
     }
 
-    pub async fn inspect_risk(
-        &self,
-        cand: &ContractCandidate,
-        ctx: &dyn RiskContext,
-    ) -> Result<RiskReport, ScanError> {
-        let engine = self.risk_engine(); // 你可以缓存在 self 里
-        engine.run(ctx, cand.contract).map_err(ScanError::Config)
-    }
+    // pub async fn inspect_risk(
+    //     &self,
+    //     cand: &ContractCandidate,
+    //     ctx: &dyn RiskContext,
+    // ) -> Result<RiskReport, ScanError> {
+    //     let engine = self.risk_engine(); // 你可以缓存在 self 里
+    //     engine.run(ctx, cand.contract).map_err(ScanError::Config)
+    // }
 }
 
 fn hex4(s: &str) -> Result<[u8; 4], ScanError> {
