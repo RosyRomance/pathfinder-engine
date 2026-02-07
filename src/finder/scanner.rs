@@ -6,7 +6,7 @@ use super::{
     errors::ScanError,
     types::BlockRange,
 };
-use crate::sink::store::ProjectStore;
+use crate::sink::project_store::ProjectStore;
 
 // ========================== Codes ==========================
 
@@ -48,7 +48,9 @@ where
             ));
         }
 
-        for block in range.from..=range.to {
+        let mut block = range.from;
+        // for block in range.from..=range.to {
+        while block <= range.to {
             // === 1. decide：处理当前区块，产出新 candidate + tx_hashes ===
             let decide = self.discovery.discover(block).await?;
             let tx_hashes = decide.tx_hashes;
@@ -111,6 +113,7 @@ where
             self.store.save_pending(chain_id, &pending).await?;
             println!("Pending candidates for next round: {}", pending.len());
             println!("Store: \n{:?}\n{:?}\n{:?}", self.store.seen().await, self.store.pending_map().await, self.store.verified_list().await);
+            block += 100;
         }
 
         Ok(inserted)

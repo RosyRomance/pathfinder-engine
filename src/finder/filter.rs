@@ -249,6 +249,8 @@ impl<C: EvmClient> BehaviorFilter<C> {
     // }
 }
 
+// ========================== Funcs ==========================
+
 fn hex4(s: &str) -> Result<[u8; 4], ScanError> {
     // Expect "0x" optional, then 8 hex chars
     let t = s.strip_prefix("0x").unwrap_or(s);

@@ -12,6 +12,7 @@ CREATE TABLE pending_contracts (
 ENGINE = ReplacingMergeTree
 ORDER BY (chain_id, contract);
 
+
 CREATE TABLE verified_projects (
     chain_id UInt64,
     staking_contract String,
@@ -19,14 +20,6 @@ CREATE TABLE verified_projects (
 )
 ENGINE = ReplacingMergeTree
 ORDER BY (chain_id, staking_contract);
-
-
-
-
-
-
-
-
 
 
 CREATE TABLE IF NOT EXISTS risk_records
@@ -54,6 +47,7 @@ CREATE TABLE IF NOT EXISTS risk_records
 ENGINE = ReplacingMergeTree(scanned_at_unix)
 PARTITION BY chain_id
 ORDER BY (chain_id, contract);
+
 
 -- TVL Snapshot 表
 CREATE TABLE IF NOT EXISTS tvl_snapshots

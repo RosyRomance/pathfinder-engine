@@ -7,6 +7,7 @@ pub mod filter;
 pub mod inspect;
 pub mod errors;
 pub mod alloy_evm;
+pub mod build;
 
 // helper
 fn hex_to_bytes4(s: &str) -> [u8; 4] {

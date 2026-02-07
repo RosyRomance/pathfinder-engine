@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use alloy::primitives::Address;
 use super::{
-    types::{ChainId, ContractCandidate, ProjectSnapshot, 
+    types::{ChainId, ContractCandidate, ProjectProfile,
         FilterDecision, ProjectType, LockupType, 
         AprSource, AdminKeyType
     },
@@ -20,7 +20,7 @@ pub trait CandidateInspector: Send + Sync {
         decision: &FilterDecision,
         snapshot_date: &str,
         now_unix: u64,
-    ) -> Result<ProjectSnapshot, ScanError>;
+    ) -> Result<ProjectProfile, ScanError>;
 }
 
 pub struct ShallowInspector<C: EvmClient> {
@@ -36,11 +36,11 @@ impl<C: EvmClient> CandidateInspector for ShallowInspector<C> {
         decision: &FilterDecision,
         snapshot_date: &str,
         now_unix: u64,
-    ) -> Result<ProjectSnapshot, ScanError> {
+    ) -> Result<ProjectProfile, ScanError> {
         // v1: best-effort, many fields None/Unknown.
         let is_upgradeable = self.detect_proxy(cand).await.ok();
 
-        let snap = ProjectSnapshot {
+        let snap = ProjectProfile {
             project_id: make_project_id(cand.chain_id, &cand.contract),
             chain_id: cand.chain_id,
 

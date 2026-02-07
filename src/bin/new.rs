@@ -1,44 +1,44 @@
-//! Example of querying logs from the Ethereum network.
- 
-use alloy::{
-    primitives::{Log, LogData, address, b256},
-    providers::{Provider, ProviderBuilder},
-    rpc::types::Filter,
-};
 use anyhow::Result;
-// use pathfinder::new_project_scanner::filter::hex4;
- 
+use clickhouse::Client;
+use pathfinder::{
+    finder::{
+        self, 
+        alloy_evm::AlloyEvmClient, 
+        types::BlockRange
+    }, 
+    sink::{
+        client::ClickhouseClient, project_store::ClickhouseStore, 
+        risk_store::ClickHouseRiskStore,
+    },
+};
+
+// ===================== Demo main =====================
+
 #[tokio::main]
 async fn main() -> Result<()> {
-    let v = vec![
-            // classic staking
-            "4e71d92d".to_string(), "2e1a7d4d".to_string(), "3d18b912".to_string(), "e9fad8ee".to_string(),
+    // let rpc = "https://mainnet.infura.io/v3/0ef6610d981448148aaa9f2d9c767e8d";
+    // let rpc = "https://arbitrum-mainnet.infura.io/v3/0ef6610d981448148aaa9f2d9c767e8d";
+    let rpc = "https://eth-mainnet.g.alchemy.com/v2/vrWxm65DXY22173CY6Zi28BEwiEcxnwU";
+    // let rpc = "https://arb-mainnet.g.alchemy.com/v2/vrWxm65DXY22173CY6Zi28BEwiEcxnwU";
 
-            // ERC-4626
-            "6e553f65".to_string(), "94bf804d".to_string(), "b460af94".to_string(), "ba087652".to_string(),
+    let evm_client = AlloyEvmClient::new_client(rpc)?;
 
-            // MasterChef / LP staking
-            "e2bbb158".to_string(), "441a3e70".to_string(), "5312ea8e".to_string(),
+    let ch_client = ClickhouseClient { client:  Client::default().with_url("http://127.0.0.1:8123").with_database("pathfinder")};
+    let store = ClickhouseStore::new(ch_client);
 
-            // LST / Restaking
-            "a1903eab".to_string(), "ccee5c2f".to_string(),
+    let scanner = finder::build::build(store, evm_client).expect("build Scanner failed");
 
-            // vote escrow / lock
-            "3f3f8f96".to_string(), "219f5d17".to_string(), "a5f3c23b".to_string(),
-
-            // delegate / bond
-            "5c19a95c".to_string(), "4c1f4d3a".to_string(),
-        ];
-    // for sel_hex in v {
-    //     println!("parsing selector hex: {}", sel_hex);
-    //     let sel = match hex4(&sel_hex) {
-    //             Ok(v) => v,
-    //             Err(err) => {
-    //                 println!("Failed to parse selector hex: {} - Error: {}", sel_hex, err);
-    //                 continue;
-    //         },
-    //     };
-    //     println!("selector hex: {} => bytes: {:?}", sel_hex, sel);
-    // }
+    let latest_block = 19499213u64;    // 原生质押
+    // let latest_block = 19584321u64;  // Lido
+    let block_range = BlockRange {
+        from: latest_block,
+        to: latest_block + 5000,
+    };  
+    let snapshot_date = "2024-06-01";
+    let now_unix = chrono::Utc::now().timestamp() as u64;
+    match scanner.run_once(block_range, snapshot_date, now_unix).await {
+        Ok(inserted) => println!("Scan complete. New projects inserted: {}", inserted),
+        Err(e) => eprintln!("Scan failed with error: {:?}", e),
+    }
     Ok(())
 }

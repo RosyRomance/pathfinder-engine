@@ -34,6 +34,7 @@ impl<C: EvmClient> ContractDiscovery for SimpleDiscovery<C> {
 
         // 1) fetch tx hashes in this block
         let txs = self.client.get_block_tx_hashes(block).await?;
+        println!("txs: {:?}", txs);
         if txs.is_empty() {
             return Ok(DecideOutput {
                 new_candidates,
@@ -43,6 +44,7 @@ impl<C: EvmClient> ContractDiscovery for SimpleDiscovery<C> {
 
         // 2) inspect receipts
         let receipts = self.client.fetch_receipts(&txs, 8).await;
+        println!("receipts: {:?}", receipts);
         for (tx, receipt) in receipts {
 
             let mut interesting = false;

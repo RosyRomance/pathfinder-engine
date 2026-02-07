@@ -99,7 +99,7 @@ pub enum AdminKeyType {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ProjectSnapshot {
+pub struct ProjectProfile {
     pub project_id: String,
     pub chain_id: ChainId,
 

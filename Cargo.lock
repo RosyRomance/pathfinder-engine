@@ -2823,6 +2823,7 @@ dependencies = [
  "clickhouse",
  "futures",
  "hex",
+ "once_cell",
  "reqwest 0.13.1",
  "serde",
  "serde_json",

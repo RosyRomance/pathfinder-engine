@@ -29,6 +29,9 @@ pub struct ProjectSnapshot {
     /// 被分析的核心合约（staking / vault / gauge）
     pub staking_contract: Address,
 
+    pub staked_token: Option<Address>,
+    pub reward_token: Option<Address>,
+
     /// 本次快照基于的区块高度
     pub produced_at_block: BlockNumber,
 

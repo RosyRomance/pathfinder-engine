@@ -4,11 +4,14 @@ use tokio::sync::{RwLock, Mutex};
 use std::collections::{HashMap, HashSet};
 use crate::{
     finder::{
-        types::{ChainId, ProjectSnapshot, ContractCandidate},
+        types::{ChainId, ContractCandidate, ProjectProfile},
         errors::ScanError,
     },
-    risk::model::RiskRecord,
-    sink::client::ClickhouseClient,
+    risk::model::{RiskRecord, RiskRecordRow},
+    sink::{
+        client::ClickhouseClient,
+        types::ProjectSnapshot,
+    },
 };
 
 // ========================== trait ==========================
@@ -16,17 +19,17 @@ use crate::{
 // store 需要能读 / 写 pending
 #[async_trait]
 pub trait ProjectStore: Send + Sync {
-    async fn upsert_snapshot(&self, snap: &ProjectSnapshot) -> Result<(), ScanError>;
+    async fn upsert_snapshot(&self, snap: &ProjectProfile) -> Result<(), ScanError>;
 
     async fn has_seen_contract(&self, chain_id: ChainId, contract: &Address) -> Result<bool, ScanError>;
 
     async fn load_pending(&self, chain_id: u64) -> Result<Vec<ContractCandidate>, ScanError>;
     async fn save_pending(&self, chain_id: u64, cands: &[ContractCandidate]) -> Result<(), ScanError>;
-    async fn save_verified(&self, snap: &ProjectSnapshot) -> Result<(), ScanError>;
+    async fn save_verified(&self, snap: &ProjectProfile) -> Result<(), ScanError>;
 
     async fn seen(&self) -> Result<HashMap<String, bool>, ScanError>;
     async fn pending_map(&self) -> Result<HashMap<u64, Vec<ContractCandidate>>, ScanError>;
-    async fn verified_list(&self) -> Result<Vec<ProjectSnapshot>, ScanError>;
+    async fn verified_list(&self) -> Result<Vec<ProjectProfile>, ScanError>;
 
     async fn save_risk_record(&self, record: &RiskRecord) -> Result<(), ScanError>;
 
@@ -42,7 +45,9 @@ pub struct ClickhouseStore {
     pending: RwLock<HashMap<u64, Vec<ContractCandidate>>>,
 
     /// verified snapshots (append-only is fine)
-    verified: RwLock<Vec<ProjectSnapshot>>,
+    verified: RwLock<Vec<ProjectProfile>>,
+
+    snapshots: RwLock<Vec<ProjectSnapshot>>,
 
     ch: ClickhouseClient,
 }
@@ -53,6 +58,7 @@ impl ClickhouseStore {
             seen: Mutex::new(HashSet::new()),
             pending: RwLock::new(HashMap::new()),
             verified: RwLock::new(Vec::new()),
+            snapshots: RwLock::new(Vec::new()),
             ch,
         }
     }
@@ -70,13 +76,13 @@ impl ClickhouseStore {
 impl ProjectStore for ClickhouseStore {
     async fn upsert_snapshot(
         &self,
-        snap: &ProjectSnapshot,
+        snap: &ProjectProfile,
     ) -> Result<(), ScanError> {
         let k = Self::key(snap.chain_id, &snap.staking_contract);
         let mut g = self
             .seen
             .lock()
-            .map_err(|_| ScanError::Store("lock poisoned".to_string()))?;
+            .await;
         g.insert(k);
         Ok(())
     }
@@ -90,7 +96,7 @@ impl ProjectStore for ClickhouseStore {
         let g = self
             .seen
             .lock()
-            .map_err(|_| ScanError::Store("lock poisoned".to_string()))?;
+            .await;
         Ok(g.contains(&k))
     }
 
@@ -120,7 +126,7 @@ impl ProjectStore for ClickhouseStore {
 
     async fn save_verified(
         &self,
-        snap: &ProjectSnapshot,
+        snap: &ProjectProfile,
     ) -> Result<(), ScanError> {
         let mut guard = self.verified.write().await;
 
@@ -133,7 +139,7 @@ impl ProjectStore for ClickhouseStore {
         let g = self
             .seen
             .lock()
-            .map_err(|_| ScanError::Store("lock poisoned".to_string()))?;
+            .await;
         let map = g.iter().map(|k| (k.clone(), true)).collect();
         Ok(map)
     }
@@ -143,7 +149,7 @@ impl ProjectStore for ClickhouseStore {
         Ok(guard.clone())
     }  
 
-    async fn verified_list(&self) -> Result<Vec<ProjectSnapshot>, ScanError> {
+    async fn verified_list(&self) -> Result<Vec<ProjectProfile>, ScanError> {
         let guard = self.verified.read().await;
         Ok(guard.clone())
     }
@@ -170,7 +176,7 @@ impl ProjectStore for ClickhouseStore {
         let snaps = self.ch.query_verified_snapshots().await?;
 
         {
-            let mut guard = self.verified.write().await;
+            let mut guard = self.snapshots.write().await;
             *guard = snaps;
         }
 
@@ -179,9 +185,9 @@ impl ProjectStore for ClickhouseStore {
             let mut seen = self
                 .seen
                 .lock()
-                .map_err(|_| ScanError::Store("lock poisoned".to_string()))?;
+                .await;
 
-            for snap in self.verified.read().await.iter() {
+            for snap in self.snapshots.read().await.iter() {
                 let k = Self::key(snap.chain_id, &snap.staking_contract);
                 seen.insert(k);
             }
@@ -201,10 +207,10 @@ impl ProjectStore for ClickhouseStore {
         }
 
         // 2️⃣ flush verified
-        let verified = self.verified.read().await;
+        let snapshots = self.snapshots.read().await;
 
         self.ch
-            .insert_verified_snapshots(&verified)
+            .insert_verified_snapshots(&snapshots)
             .await?;
 
         Ok(())
@@ -214,25 +220,41 @@ impl ProjectStore for ClickhouseStore {
         &self,
         r: &RiskRecord,
     ) -> Result<(), ScanError> {
-        self.client
+        let mut insert = self.ch
+            .client
             .insert("risk_records")
-            .one((
-                r.chain_id,
-                r.contract.as_slice(),
-                r.scanned_block,
-                r.scanned_at_unix,
-                r.risk_score,
-                r.has_owner_withdraw as u8,
-                r.has_pause as u8,
-                r.has_proxy_admin_eoa as u8,
-                r.has_high_concentration as u8,
-                r.has_high_tvl_volatility as u8,
-                r.top1_holder,
-                r.top3_holder,
-                r.tvl_change_24h,
-                &r.flags_json,
-            ))
+            .map_err(|e| ScanError::Store(e.to_string()))?;
+
+        let row = RiskRecordRow {
+            chain_id: r.chain_id,
+            contract: r.contract.as_slice().to_vec(),
+            scanned_block: r.scanned_block,
+            scanned_at_unix: r.scanned_at_unix,
+            risk_score: r.risk_score,
+
+            has_owner_withdraw: r.has_owner_withdraw as u8,
+            has_pause: r.has_pause as u8,
+            has_proxy_admin_eoa: r.has_proxy_admin_eoa as u8,
+            has_high_concentration: r.has_high_concentration as u8,
+            has_high_tvl_volatility: r.has_high_tvl_volatility as u8,
+
+            top1_holder: r.top1_holder,
+            top3_holder: r.top3_holder,
+            tvl_change_24h: r.tvl_change_24h,
+
+            flags_json: r.flags_json.clone(),
+        };
+
+        insert
+            .write(&row)
             .await
-            .map_err(|e| ScanError::Store(e.to_string()))
+            .map_err(|e| ScanError::Store(e.to_string()))?;
+
+        insert
+            .end()
+            .await
+            .map_err(|e| ScanError::Store(e.to_string()))?;
+
+        Ok(())
     }
 }
