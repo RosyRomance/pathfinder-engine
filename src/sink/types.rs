@@ -143,10 +143,6 @@ impl VerifiedProjectRow {
     }
 }
 
-pub struct ClickhouseClient {
-    client: Client,
-}
-
 // ========================== funcs ==========================
 fn parse_address(s: &str) -> Result<Address, ScanError> {
     Address::from_str(s).map_err(|e| ScanError::Store(format!("invalid address: {s}: {e}")))

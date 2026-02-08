@@ -1,5 +1,4 @@
 use anyhow::Result;
-use clickhouse::Client;
 use alloy::primitives::{address, Address};
 use pathfinder::{
     finder::{
@@ -7,10 +6,6 @@ use pathfinder::{
         types::{BlockRange, ContractCandidate, TxHash},
         config::ScannerConfig,
     }, 
-    sink::{
-        client::ClickhouseClient, project_store::ClickhouseStore, 
-        risk_store::ClickHouseRiskStore,
-    },
 };
 
 // ===================== Demo main =====================
@@ -24,7 +19,7 @@ async fn main() -> Result<()> {
 
     let evm_client = AlloyEvmClient::new_client(rpc)?;
 
-    let block = 15951000;
+    let block = 		23789273;
     let cfg = ScannerConfig {
         chain_id: 1,
         min_confidence: 0.75,
@@ -53,7 +48,7 @@ async fn main() -> Result<()> {
 
     let contract = ContractCandidate {
         chain_id: 1,
-        contract: address!("0xB753548F6E010e7e680BA186F9Ca1BdAB2E90cf2"),
+        contract: address!("0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"),
         deployed_block: block,
         receives_token: None,
         has_balance: None,

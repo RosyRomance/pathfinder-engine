@@ -1,5 +1,6 @@
 use anyhow::Result;
 use clickhouse::Client;
+use std::sync::Arc;
 use pathfinder::{
     finder::{
         self, 
@@ -24,7 +25,7 @@ async fn main() -> Result<()> {
     let evm_client = AlloyEvmClient::new_client(rpc)?;
 
     let ch_client = ClickhouseClient { client:  Client::default().with_url("http://127.0.0.1:8123").with_database("pathfinder")};
-    let store = ClickhouseStore::new(ch_client);
+    let store = Arc::new(ClickhouseStore::new(&ch_client));
 
     let scanner = finder::build::build(store, evm_client).expect("build Scanner failed");
 

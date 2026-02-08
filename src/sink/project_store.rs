@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use std::sync::Arc;
 use alloy::primitives::Address;
 use tokio::sync::{RwLock, Mutex};
 use std::collections::{HashMap, HashSet};
@@ -30,6 +31,7 @@ pub trait ProjectStore: Send + Sync {
     async fn seen(&self) -> Result<HashMap<String, bool>, ScanError>;
     async fn pending_map(&self) -> Result<HashMap<u64, Vec<ContractCandidate>>, ScanError>;
     async fn verified_list(&self) -> Result<Vec<ProjectProfile>, ScanError>;
+    async fn snapshots_list(&self) -> Result<Vec<ProjectSnapshot>, ScanError>;
 
     async fn save_risk_record(&self, record: &RiskRecord) -> Result<(), ScanError>;
 
@@ -49,17 +51,17 @@ pub struct ClickhouseStore {
 
     snapshots: RwLock<Vec<ProjectSnapshot>>,
 
-    ch: ClickhouseClient,
+    ch: Arc<ClickhouseClient>,
 }
 
 impl ClickhouseStore {
-    pub fn new(ch: ClickhouseClient) -> Self {
+    pub fn new(ch: &ClickhouseClient) -> Self {
         Self {
             seen: Mutex::new(HashSet::new()),
             pending: RwLock::new(HashMap::new()),
             verified: RwLock::new(Vec::new()),
             snapshots: RwLock::new(Vec::new()),
-            ch,
+            ch: Arc::new(ch.clone()),
         }
     }
 
@@ -154,6 +156,11 @@ impl ProjectStore for ClickhouseStore {
         Ok(guard.clone())
     }
 
+    async fn snapshots_list(&self) -> Result<Vec<ProjectSnapshot>, ScanError> {
+        let guard = self.snapshots.read().await;
+        Ok(guard.clone())
+    }
+
     async fn bootstrap_from_db(&self) -> Result<(), ScanError> {
         // 1️⃣ 读取 pending
         let rows = self.ch.query_pending_contracts().await?;
@@ -200,6 +207,7 @@ impl ProjectStore for ClickhouseStore {
         // 1️⃣ flush pending
         let pending = self.pending.read().await;
 
+        self.ch.truncate_pending_contracts().await?;
         for (chain_id, cands) in pending.iter() {
             self.ch
                 .insert_pending_contracts(*chain_id, cands)
@@ -209,6 +217,7 @@ impl ProjectStore for ClickhouseStore {
         // 2️⃣ flush verified
         let snapshots = self.snapshots.read().await;
 
+        self.ch.truncate_verified_snapshots().await?;
         self.ch
             .insert_verified_snapshots(&snapshots)
             .await?;

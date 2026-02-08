@@ -1,22 +1,13 @@
 use async_trait::async_trait;
-use futures::{stream, stream::FuturesUnordered, StreamExt};
+use futures::{stream, StreamExt};
 use std::collections::HashSet;
-use tokio::sync::Semaphore;
-use std::sync::Arc;
-use crate::risk::{
-    scorer::RiskReport,
-    engine::RiskContext,
-};
 use alloy::{
-    hex,
-    primitives::{FixedBytes, Address, U256, TxKind, Bytes, B256, b256},
+    sol,
+    primitives::{FixedBytes, Address, U256, B256, b256},
     rpc::types::{
-        TransactionRequest, 
-        TransactionInput,
         TransactionReceipt,
         Log,
     },
-    providers::Provider,
 };
 use super::{
     types::{ContractCandidate, FilterDecision, FilterSignals, TxHash},
@@ -29,10 +20,18 @@ use super::{
 
 // ERC20 Transfer(address,address,uint256)
 pub const TRANSFER_SIG: B256 =
-    b256!("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
+    b256!("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");            // ERC20 transfer sig
+
 const BALANCE_OF_SELECTOR: FixedBytes<4> = FixedBytes([
     0x70, 0xa0, 0x82, 0x31, // balanceOf(address)
 ]);
+
+sol! {
+    #[sol(rpc)]
+    interface IERC20 {
+        function balanceOf(address) external view returns (uint256);
+    }
+}
 
 // ========================== Codes ==========================
 
@@ -74,7 +73,6 @@ impl<C: EvmClient> CandidateFilter for BehaviorFilter<C> {
         } else {
             false
         };
-        println!("retains: {}", retains);
 
         let mut pass_count = 0;
         if receives {
@@ -214,39 +212,17 @@ impl<C: EvmClient> BehaviorFilter<C> {
         token: Address,
         owner: Address,
     ) -> Result<U256, ScanError> {
-        let mut data = [0u8; 36];
-        data[..4].copy_from_slice(&BALANCE_OF_SELECTOR.0);
-        data[4 + 12..].copy_from_slice(owner.as_slice());
+        let erc20 = IERC20::new(token, self.client.provider().clone());
 
-        let tx = TransactionRequest {
-            to: Some(TxKind::Call(token)),
-            input: TransactionInput {
-                input: Some(Bytes::copy_from_slice(&data)),
-                data: None,
-            },
-            ..Default::default()
-        };
-        let raw = self.client
-            .provider()
-            .call(tx)
-            .await
-            .map_err(|e| ScanError::Provider(e.to_string()))?;
-
-        if raw.len() < 32 {
-            return Ok(U256::ZERO);
+        match erc20.balanceOf(owner).call().await {
+            Ok(balance) => {
+                return Ok(balance);
+            }
+            Err(e) => {
+                return Err(ScanError::Provider(format!("get balance error:{:?}", e)));
+            }
         }
-
-        Ok(U256::from_be_slice(&raw[raw.len() - 32..]))
     }
-
-    // pub async fn inspect_risk(
-    //     &self,
-    //     cand: &ContractCandidate,
-    //     ctx: &dyn RiskContext,
-    // ) -> Result<RiskReport, ScanError> {
-    //     let engine = self.risk_engine(); // 你可以缓存在 self 里
-    //     engine.run(ctx, cand.contract).map_err(ScanError::Config)
-    // }
 }
 
 // ========================== Funcs ==========================

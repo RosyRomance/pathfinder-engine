@@ -1,4 +1,5 @@
 use anyhow::Result;
+use std::sync::Arc;
 use crate::{
     finder::{
         evm::EvmClient,
@@ -13,7 +14,7 @@ use crate::{
 
 // ===================== Demo main =====================
 
-pub fn build<C>(store: ClickhouseStore, client: C,
+pub fn build<C>(store: Arc<ClickhouseStore>, client: C,
 ) -> Result<Scanner<
     SimpleDiscovery<C>,
     BehaviorFilter<C>,
@@ -28,7 +29,7 @@ where
         min_confidence: 0.75,
         lookback_blocks: 1000,
         max_candidates_per_run: 100,
-        retain_balance_min_blocks: 10,  
+        retain_balance_min_blocks: 3,  
         stake_like_selectors: vec![
             // classic staking
             "4e71d92d".to_string(), "2e1a7d4d".to_string(), "3d18b912".to_string(), "e9fad8ee".to_string(),

@@ -149,4 +149,30 @@ impl ClickhouseClient {
 
         Ok(())
     }
+
+    pub async fn truncate_table(&self, table: &str) -> Result<(), ScanError> {
+        let sql = format!("TRUNCATE TABLE {}", table);
+
+        self.client
+            .query(&sql)
+            .execute()
+            .await
+            .map_err(|e| ScanError::Store(format!("truncate table error: {e}")))?;
+
+        Ok(())
+    }
+
+    pub async fn truncate_pending_contracts(&self) -> Result<(), ScanError> {
+        // drop older data or there will be duplicated data;
+        self.truncate_table("pending_contracts").await?;
+
+        Ok(())
+    }
+
+    pub async fn truncate_verified_snapshots(&self) -> Result<(), ScanError> {
+        // drop older data or there will be duplicated data;
+        self.truncate_table("verified_projects").await?;
+
+        Ok(())
+    }
 }

@@ -7,6 +7,7 @@ use crate::{
         engine::SnapshotPoint,
         context::RiskStore,
     },
+    sink::project_store::ClickhouseStore,
 };
 // ========================== Funcs ==========================
 
@@ -49,7 +50,7 @@ pub struct ClickHouseRiskStore {
     pub client: clickhouse::Client,
 }
 
-impl RiskStore for ClickHouseRiskStore {
+impl RiskStore for ClickhouseStore {
     fn holder_concentration(
         &self,
         token: Address,
