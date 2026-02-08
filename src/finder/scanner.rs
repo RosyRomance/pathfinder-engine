@@ -51,16 +51,16 @@ where
             ));
         }
 
-        // let mut block = range.from;
         for block in range.from..=range.to {
-        // while block <= range.to {
+            println!("===================================================");
+            println!("Scanning block: {}\n", block);
             // === 1. decide：处理当前区块，产出新 candidate + tx_hashes ===
             let decide = self.discovery.discover(block).await?;
             let tx_hashes = decide.tx_hashes;
             let new_candidates = decide.new_candidates;
 
             println!(
-                "Decide produced {} new candidates, {} tx hashes",
+                "Decide produced {} new candidates, {} tx hashes to validate contract candidates\n",
                 new_candidates.len(),
                 tx_hashes.len()
             );
@@ -91,7 +91,7 @@ where
                     }
                 } else {
                     if verified_once && block - cand.first_receive_block.unwrap() >= self.cfg.retain_balance_min_blocks {
-                        println!("  Candidate {:?} succeed retaining balance check after {} blocks", cand.contract, self.cfg.retain_balance_min_blocks);
+                        println!("  Candidate {:?} succeed retaining balance check after {} blocks\n", cand.contract, self.cfg.retain_balance_min_blocks);
                         verified = true;
                     }
                 }
@@ -110,7 +110,7 @@ where
                     still_pending.push(cand);
                 } else {
                     println!(
-                        "Drop candidate {:?} after {} attempts",
+                        "Drop candidate {:?} after {} attempts\n",
                         cand.contract, cand.verify_attempts
                     );
                 }
@@ -120,10 +120,11 @@ where
             pending.extend(new_candidates);
 
             self.store.save_pending(chain_id, &pending).await?;
-            println!("Store: \n{:?}\n{:?}\n{:?}", self.store.seen().await, self.store.pending_map().await, self.store.verified_list().await);
+            println!("Contract Candidate Need To Verify: {:?}\n", self.store.pending_map().await);
+            println!("Varified Contract: {:?}\n", self.store.verified_list().await);
         }
 
-        // self.store.persist_to_db().await?;
+        self.store.persist_to_db().await?;
 
         Ok(inserted)
     }

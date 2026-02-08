@@ -115,11 +115,11 @@ impl<C: EvmClient> BehaviorFilter<C> {
         let target = cand.contract;
 
         for (h, receipt) in receipts {
-            println!(
-                "  check_receives_token: tx={} has {} logs",
-                h,
-                receipt.logs().len()
-            );
+            // println!(
+            //     "  check_receives_token: tx={} has {} logs",
+            //     h,
+            //     receipt.logs().len()
+            // );
 
             for log in receipt.logs() {
                 if is_erc20_receive(log, target) {

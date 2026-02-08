@@ -29,7 +29,7 @@ where
         min_confidence: 0.75,
         lookback_blocks: 1000,
         max_candidates_per_run: 100,
-        retain_balance_min_blocks: 3,  
+        retain_balance_min_blocks: 2,  
         stake_like_selectors: vec![
             // classic staking
             "4e71d92d".to_string(), "2e1a7d4d".to_string(), "3d18b912".to_string(), "e9fad8ee".to_string(),
